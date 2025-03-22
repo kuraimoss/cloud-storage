@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome Home</title>
+  <!-- Link to Bootstrap -->
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  />
+  <style>
+    /* Custom styling untuk tampilan lebih menarik */
+    body {
+      background: #f0f8ff; /* Warna latar belakang biru muda */
+      font-family: 'Arial', sans-serif;
+    }
+    .hero-section {
+      background-color: #007bff;
+      color: white;
+      padding: 60px 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .hero-section h2 {
+      font-size: 2.5rem;
+    }
+    .btn-custom {
+      background-color: #28a745;
+      color: white;
+      font-size: 1.1rem;
+      padding: 12px 30px;
+      border-radius: 5px;
+    }
+    .btn-custom:hover {
+      background-color: #218838;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 50px;
+      font-size: 1rem;
+      color: #6c757d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <!-- Hero Section with title and description -->
+    <div class="hero-section">
+      <h2>Selamat datang di Cloud Storage!</h2>
+      <p class="lead">Tempat yang aman untuk menyimpan file Anda. Login untuk mengakses dashboard dan mulai bekerja.</p>
+      <a href="/login" class="btn btn-custom">Masuk</a>
+    </div>
+    
+    <!-- Optional: Button to navigate to Dashboard after Login (directly to /dashboard) -->
+    <div class="text-center mt-4">
+      <a href="/dashboard" class="btn btn-primary btn-lg">Lihat Dashboard</a>
+    </div>
+
+    <!-- Footer Section -->
+    <div class="footer">
+      <p>© 2025 Cloud Storage. All rights reserved.</p>
+    </div>
+  </div>
+
+  <!-- Script Bootstrap -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
