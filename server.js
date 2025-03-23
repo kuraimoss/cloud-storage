@@ -489,11 +489,14 @@ process.on('SIGTERM', shutdown);
 
 // Opsional: Jalankan dengan HTTPS
 // Ganti dengan path ke file SSL kamu
-const sslOptions = {
-    key: fs.readFileSync(path.join(__dirname, 'ssl', 'key.pem')),
-    cert: fs.readFileSync(path.join(__dirname, 'ssl', 'cert.pem'))
-};
+// const sslOptions = {
+//     key: fs.readFileSync(path.join(__dirname, 'ssl', 'key.pem')),
+//     cert: fs.readFileSync(path.join(__dirname, 'ssl', 'cert.pem'))
+// };
 
-https.createServer(sslOptions, app).listen(PORT, HOST, () => {
-    console.log(`Aplikasi berjalan pada https://${HOST}:${PORT}`);
+// https.createServer(sslOptions, app).listen(PORT, HOST, () => {
+//     console.log(`Aplikasi berjalan pada https://${HOST}:${PORT}`);
+// });
+app.listen(PORT, HOST, () => {
+    console.log(`Aplikasi berjalan pada http://${HOST}:${PORT}`);
 });
