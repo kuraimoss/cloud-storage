@@ -6,14 +6,20 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const os = require('os');
 const crypto = require('crypto');
+// Tambahan: logging
+const morgan = require('morgan');
+// Tambahan: untuk HTTPS (opsional)
+const https = require('https');
 
 const app = express();
-const PORT = 2996;
+const PORT = process.env.PORT || 2996; // Gunakan env variable kalau ada
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
+app.use(morgan('combined')); // Logging setiap request
 
 // Pastikan direktori uploads ada
 const uploadDir = path.join(__dirname, 'uploads');
@@ -83,6 +89,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
     storage: storage,
+    limits: { fileSize: 50 * 1024 * 1024 } // Batas ukuran file 50MB
 });
 
 // Middleware untuk autentikasi
@@ -399,7 +406,7 @@ app.post('/share/:filename', authMiddleware, (req, res) => {
     saveDataToFile();
 
     if (enable) {
-        const shareLink = `http://localhost:${PORT}/file-access/${filename}?token=${sharedFile.token}`;
+        const shareLink = `http://${HOST}:${PORT}/file-access/${filename}?token=${sharedFile.token}`;
         res.json({ shareLink, isShared: true });
     } else {
         res.json({ shareLink: null, isShared: false });
@@ -465,6 +472,28 @@ app.use((err, req, res, next) => {
     res.status(500).sendFile(path.join(__dirname, 'public', 'access-denied.html'));
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// Graceful shutdown
+function shutdown() {
+    console.log('Shutting down server...');
+    saveDataToFile(); // Simpan data sebelum mati
+    process.exit(0);
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+// Jalankan server (HTTP biasa)
+// app.listen(PORT, HOST, () => {
+//     console.log(`Aplikasi berjalan pada http://${HOST}:${PORT}`);
+// });
+
+// Opsional: Jalankan dengan HTTPS
+// Ganti dengan path ke file SSL kamu
+const sslOptions = {
+    key: fs.readFileSync(path.join(__dirname, 'ssl', 'key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, 'ssl', 'cert.pem'))
+};
+
+https.createServer(sslOptions, app).listen(PORT, HOST, () => {
+    console.log(`Aplikasi berjalan pada https://${HOST}:${PORT}`);
 });
