@@ -1,194 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard - Cloud Storage</title>
-  <!-- Link ke Bootstrap 4 -->
-  <link
-    rel="stylesheet"
-    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-  />
-  <style>
-    /* Styling untuk sidebar */
-    .sidebar {
-      height: 100vh;
-      width: 250px;
-      position: fixed;
-      top: 0;
-      left: 0;
-      background-color: #343a40;
-      padding-top: 20px;
-      color: white;
-      font-size: 18px;
-    }
-    .sidebar a {
-      color: white;
-      padding: 12px;
-      text-decoration: none;
-      display: block;
-      transition: background-color 0.3s;
-    }
-    .sidebar a:hover {
-      background-color: #575d63;
-    }
+<div class="container-dashboard">
+    <h2 class="font-weight-bold text-center mb-3" style="font-size: 1.8rem;">Dashboard</h2>
+    <p class="text-muted text-center mb-4" style="font-size: 1rem;">Selamat datang kembali! Berikut adalah ringkasan akun Anda.</p>
 
-    /* Styling untuk konten utama */
-    .main-content {
-      margin-left: 260px;
-      padding: 20px;
-    }
-
-    /* Custom styling untuk form dan tabel */
-    .file-table th, .file-table td {
-      text-align: center;
-    }
-
-    .file-table th {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .btn-custom {
-      background-color: #007bff;
-      color: white;
-      padding: 12px 25px;
-      border-radius: 5px;
-    }
-
-    .btn-custom:hover {
-      background-color: #0056b3;
-    }
-
-    .file-actions button {
-      margin: 5px;
-    }
-
-    /* Styling untuk akun dan tombol */
-    .card-body h4 {
-      font-size: 1.5rem;
-      color: #007bff;
-    }
-
-    .card-body p {
-      font-size: 1rem;
-    }
-
-    .container-fluid {
-      padding-top: 20px;
-    }
-
-    .footer {
-      margin-top: 50px;
-      font-size: 1rem;
-      color: #6c757d;
-      text-align: center;
-    }
-
-  </style>
-</head>
-<body>
-
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <h3 class="text-center">Cloud Storage</h3>
-    <a href="#">Dashboard</a>
-    <a href="#">Upload File</a>
-    <a href="#">My Files</a>
-    <a href="#">Account</a>
-    <a href="/logout" class="text-danger">Logout</a>
-  </div>
-
-  <!-- Main Content -->
-  <div class="main-content">
-    <div class="container-fluid">
-      <!-- Header Section -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h2>Welcome to your Cloud Storage Dashboard</h2>
-          <p>Manage your files, upload new ones, and keep your data safe.</p>
-        </div>
-      </div>
-
-      <!-- Account Overview Section -->
-      <div class="row mb-4">
-        <div class="col-12 col-md-6">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h4 class="card-title">Account Overview</h4>
-              <p><strong>Username:</strong> John Doe</p>
-              <p><strong>Storage Usage:</strong> 10GB of 50GB used</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- File Upload Section -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h4 class="card-title">Upload File</h4>
-              <form action="/upload" method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                  <label for="fileUpload">Select a file to upload:</label>
-                  <input type="file" class="form-control-file" id="fileUpload" name="file" required />
+    <div class="row">
+        <!-- Account Overview -->
+        <div class="col-md-6 mb-4">
+            <div class="card p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="User Icon" class="card-icon mr-3">
+                    <h4 class="font-weight-bold">Account Overview</h4>
                 </div>
-                <button type="submit" class="btn btn-custom">Upload File</button>
-              </form>
+                <p><strong>Username:</strong> <span id="username">User123</span></p>
+                <p><strong>Storage Usage:</strong> <span id="storageUsage">0 MB of 50 MB used</span></p>
+                <div class="storage-progress">
+                    <div class="storage-progress-bar" id="storageProgressBar" style="width: 0%;"></div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
 
-      <!-- File List Section -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h4 class="card-title">Your Files</h4>
-              <table class="table file-table">
-                <thead>
-                  <tr>
-                    <th>File Name</th>
-                    <th>Size</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>file1.pdf</td>
-                    <td>1.2MB</td>
-                    <td class="file-actions">
-                      <button class="btn btn-info btn-sm">Download</button>
-                      <button class="btn btn-danger btn-sm">Delete</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>file2.jpg</td>
-                    <td>3.4MB</td>
-                    <td class="file-actions">
-                      <button class="btn btn-info btn-sm">Download</button>
-                      <button class="btn btn-danger btn-sm">Delete</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+        <!-- Quick Stats -->
+        <div class="col-md-6 mb-4">
+            <div class="card p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1087/1087840.png" alt="Stats Icon" class="card-icon mr-3">
+                    <h4 class="font-weight-bold">Quick Stats</h4>
+                </div>
+                <p><strong>Total Files:</strong> <span class="text-primary" id="totalFiles">0</span></p>
+                <p><strong>Shared Files:</strong> <span class="text-warning" id="sharedFiles">0</span></p>
+                <p><strong>Last Upload:</strong> <span class="text-muted" id="lastUpload">N/A</span></p>
             </div>
-          </div>
         </div>
-      </div>
     </div>
-  </div>
 
-  <!-- Footer -->
-  <div class="footer">
-    <p>© 2025 Cloud Storage. All rights reserved.</p>
-  </div>
-
-  <!-- Script Bootstrap -->
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
-</html>
+    <!-- Recent Files -->
+    <div class="card p-4">
+        <h4 class="font-weight-bold mb-3">Recent Files</h4>
+        <div class="table-responsive">
+            <table class="recent-files-table table">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Size</th>
+                        <th>Uploaded</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>

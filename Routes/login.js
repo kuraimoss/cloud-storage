@@ -1,27 +1,29 @@
-// Routes/login.js
-
 const express = require('express');
 const router = express.Router();
 const path = require('path');
 
-// GET: Halaman Login
+// Halaman login
 router.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
+    // Jika sudah ada userToken, arahkan ke halaman utama
+    if (req.cookies.userToken) {
+        return res.redirect('/');
+    }
+    res.sendFile(path.join(__dirname, '../public', 'login.html'));
 });
 
-// POST: Proses Login
+// Proses login
 router.post('/login', (req, res) => {
-  const { username, password } = req.body;
+    const { username, password } = req.body;
 
-  // Simulasi autentikasi
-  if (username === 'kura' && password === 'kura') {
-    // Set cookie token sederhana
-    res.cookie('userToken', 'authenticated', { httpOnly: true });
-    return res.redirect('/dashboard');
-  } else {
-    return res.status(401).send('Ups, kredensial salah!');
-  }
+    // Contoh autentikasi sederhana (ganti dengan logika autentikasi Anda)
+    if (username === 'root' && password === 'kura') {
+        // Set cookie userToken dan username
+        res.cookie('userToken', 'authenticated-user-token', { httpOnly: true });
+        res.cookie('username', username, { httpOnly: true }); // Simpan username di cookie
+        res.json({ success: true, redirect: '/' });
+    } else {
+        res.status(401).json({ success: false, error: 'Invalid username or password' });
+    }
 });
 
-// Meng-ekspor router
 module.exports = router;

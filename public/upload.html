@@ -1,0 +1,104 @@
+<div class="container-upload">
+    <h2 class="font-weight-bold text-center mb-3">Unggah File Anda</h2>
+    <p class="text-muted text-center mb-4">Pilih file atau seret ke area di bawah ini.</p>
+    <div class="card">
+        <div class="card-body">
+            <form id="uploadForm">
+                <div class="text-center mb-3">
+                    <p>Seret file ke sini atau klik untuk memilih</p>
+                    <input type="file" id="file" name="file" multiple style="display: none;" />
+                    <button type="button" class="btn btn-custom" onclick="document.getElementById('file').click()">Pilih
+                        File</button>
+                </div>
+                <div id="fileList" style="display: none;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nama File</th>
+                                <th>Ukuran</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fileListBody"></tbody>
+                    </table>
+                </div>
+                <div class="text-center">
+                    <button type="submit" id="submitBtn" class="btn btn-custom d-none">Unggah Sekarang</button>
+                </div>
+                <div id="uploadStatus"></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const uploadArea = document.querySelector('.card-body');
+    const fileInput = document.getElementById('file');
+    const submitBtn = document.getElementById('submitBtn');
+    const uploadForm = document.getElementById('uploadForm');
+
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.background = '#f9f9f9';
+        uploadArea.style.transform = 'scale(1.02)';
+    });
+
+    uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.style.background = '#fff';
+        uploadArea.style.transform = 'scale(1)';
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileInput.files = e.dataTransfer.files;
+        uploadArea.style.background = '#fff';
+        uploadArea.style.transform = 'scale(1)';
+        submitBtn.classList.remove('d-none');
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            submitBtn.classList.remove('d-none');
+        }
+    });
+
+    uploadForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const uploadStatus = document.getElementById('uploadStatus');
+        const files = fileInput.files;
+
+        if (files.length === 0) {
+            uploadStatus.innerHTML = '<div class="alert alert-danger">Pilih file terlebih dahulu.</div>';
+            return;
+        }
+
+        const progressBar = document.createElement('div');
+        progressBar.classList.add('progress');
+        progressBar.innerHTML = `
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" id="progressBar"></div>
+        `;
+        uploadStatus.appendChild(progressBar);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload', true);
+
+        xhr.upload.addEventListener('progress', function (e) {
+            if (e.lengthComputable) {
+                const percentComplete = (e.loaded / e.total) * 100;
+                document.getElementById('progressBar').style.width = percentComplete + '%';
+            }
+        });
+
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                uploadStatus.innerHTML = '<div class="alert alert-success">File berhasil diunggah!</div>';
+            } else {
+                uploadStatus.innerHTML = '<div class="alert alert-danger">Gagal mengunggah file.</div>';
+            }
+        };
+
+        xhr.send(formData);
+    });
+</script>

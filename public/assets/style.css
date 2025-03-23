@@ -1,0 +1,920 @@
+/* General Layout */
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); /* Sesuaikan dengan home.html dan login.html */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    color: #333;
+}
+
+.wrapper {
+    display: flex;
+    flex: 1;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    height: 100vh;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: linear-gradient(180deg, #2c3e50, #1e2a44);
+    padding: 20px 15px;
+    color: #ecf0f1;
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.sidebar h3 {
+    font-size: 1.5rem;
+    margin-bottom: 30px;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #ffffff;
+    position: relative;
+}
+
+.sidebar h3::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 2px;
+    background: #3498db;
+}
+
+.sidebar-item {
+    color: #ecf0f1;
+    padding: 12px 15px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    border-radius: 8px;
+    margin: 5px 0;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-item::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    filter: brightness(0) invert(1);
+}
+
+.sidebar-item.dashboard::before {
+    background-image: url('https://cdn-icons-png.flaticon.com/512/2920/2920335.png');
+}
+
+.sidebar-item.upload::before {
+    background-image: url('https://cdn-icons-png.flaticon.com/512/1087/1087840.png');
+}
+
+.sidebar-item.files::before {
+    background-image: url('https://cdn-icons-png.flaticon.com/512/3135/3135768.png');
+}
+
+.sidebar-item.logout::before {
+    background-image: url('https://cdn-icons-png.flaticon.com/512/1828/1828427.png');
+}
+
+.sidebar-item:hover {
+    background: rgba(52, 152, 219, 0.2);
+    color: #ffffff;
+    transform: translateX(5px);
+}
+
+.sidebar-item:hover::before {
+    filter: brightness(0) invert(1) hue-rotate(180deg);
+}
+
+.sidebar-item.active {
+    background: #3498db;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* Main Content */
+.main-content {
+    flex-grow: 1;
+    margin-left: 250px;
+    padding: 30px;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    transition: margin-left 0.4s ease;
+}
+
+/* Container untuk Dashboard */
+.container-dashboard {
+    max-width: 1100px;
+    width: 100%;
+    margin-left: 50px;
+    margin-right: auto;
+}
+
+/* Container untuk Upload File dan My Files */
+.container-upload,
+.container-files {
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Footer Styling */
+.footer {
+    padding: 15px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #bdc3c7; /* Sesuaikan dengan home.html dan login.html */
+    background: none; /* Sesuaikan dengan home.html dan login.html */
+    margin-top: auto;
+    position: relative;
+    z-index: 1;
+}
+
+/* Card Styling */
+.card {
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress Bar for Storage Usage */
+.storage-progress {
+    height: 10px;
+    background: #ecf0f1;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.storage-progress-bar {
+    height: 100%;
+    transition: width 0.5s ease-in-out, background 0.3s ease;
+}
+
+/* Warna dinamis untuk progress bar */
+.storage-progress-bar.green {
+    background: linear-gradient(90deg, #6ab04c, #55efc4);
+}
+
+.storage-progress-bar.yellow {
+    background: linear-gradient(90deg, #f1c40f, #f39c12);
+}
+
+.storage-progress-bar.red {
+    background: linear-gradient(90deg, #e74c3c, #c0392b);
+}
+
+/* Icon Styling */
+.card-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 10px;
+}
+
+/* Button Styles */
+.btn-custom {
+    background: linear-gradient(45deg, #3498db, #2980b9); /* Sesuaikan dengan home.html dan login.html */
+    color: #fff;
+    padding: 12px 30px;
+    border-radius: 25px; /* Sesuaikan dengan home.html dan login.html */
+    text-transform: uppercase;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4); /* Sesuaikan shadow */
+    border: none;
+}
+
+.btn-custom:hover {
+    background: linear-gradient(45deg, #5dade2, #4a90e2); /* Sesuaikan dengan home.html dan login.html */
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
+}
+
+/* Upload Status Styling */
+#uploadStatus .alert {
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    background: linear-gradient(45deg, #e9f7ef, #d4efdf);
+    color: #2d6a4f;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+#uploadStatus .alert-danger {
+    background: linear-gradient(45deg, #f8e1e1, #f5c6cb);
+    color: #721c24;
+}
+
+/* Progress Bar for Upload */
+#uploadStatus .progress {
+    height: 8px;
+    border-radius: 4px;
+    background: #ecf0f1;
+    margin-top: 10px;
+}
+
+#uploadStatus .progress-bar {
+    background: linear-gradient(45deg, #6ab04c, #55efc4);
+}
+
+/* File List Styling */
+#fileList .table {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+}
+
+#fileList .table th,
+#fileList .table td {
+    padding: 8px;
+    vertical-align: middle;
+}
+
+#fileList .table thead {
+    background: linear-gradient(90deg, #f0f2f5, #e9ecef);
+    color: #333;
+}
+
+#fileList .table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+#fileList .btn-remove {
+    background: linear-gradient(45deg, #e74c3c, #ff6b6b);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+#fileList .btn-remove:hover {
+    background: linear-gradient(45deg, #ff6b6b, #e74c3c);
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(231, 76, 60, 0.3);
+}
+
+/* Recent Files Table */
+.recent-files-table {
+    font-size: 0.9rem;
+}
+
+.recent-files-table th,
+.recent-files-table td {
+    padding: 10px;
+    vertical-align: middle;
+}
+
+.recent-files-table thead {
+    background: linear-gradient(90deg, #f0f2f5, #e9ecef);
+    color: #333;
+}
+
+.recent-files-table tbody tr:hover {
+    background: #f8f9fa;
+    transition: background 0.3s ease;
+}
+
+/* My Files Styling */
+.container-files .search-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.container-files .search-bar input {
+    padding: 10px 15px;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    width: 300px;
+    transition: border-color 0.3s ease;
+}
+
+.container-files .search-bar input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.view-toggle {
+    display: flex;
+    gap: 10px;
+}
+
+.view-toggle button {
+    background: none;
+    border: none;
+    padding: 5px 10px;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    transition: color 0.3s ease;
+}
+
+.view-toggle button.active {
+    color: #3498db;
+    border-bottom: 2px solid #3498db;
+}
+
+.files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.file-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.file-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.file-icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+}
+
+.file-card .file-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-card .file-size {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-bottom: 10px;
+}
+
+.file-card .file-actions {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.file-card .file-actions button {
+    background: none;
+    border: none;
+    font-size: 0.85rem;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+}
+
+.file-card .file-actions .btn-view {
+    color: #00b894;
+}
+
+.file-card .file-actions .btn-share {
+    color: #3498db;
+}
+
+.file-card .file-actions .btn-download {
+    color: #6ab04c;
+}
+
+.file-card .file-actions .btn-delete {
+    color: #e74c3c;
+}
+
+.file-card .file-actions .btn-rename {
+    color: #f39c12;
+}
+
+.file-card .file-actions button:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.share-toggle {
+    margin-top: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.share-link {
+    font-size: 0.85rem;
+    color: #2c3e50;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.btn-copy {
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: none;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.btn-copy:hover {
+    background: linear-gradient(45deg, #2980b9, #3498db);
+    transform: translateY(-2px);
+}
+
+/* Switch Styling */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 20px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #3498db;
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+.files-table {
+    font-size: 0.9rem;
+}
+
+.files-table th,
+.files-table td {
+    padding: 10px;
+    vertical-align: middle;
+}
+
+.files-table thead {
+    background: linear-gradient(90deg, #f0f2f5, #e9ecef);
+    color: #333;
+}
+
+.files-table tbody tr:hover {
+    background: #f8f9fa;
+    transition: background 0.3s ease;
+}
+
+.files-table .btn-view {
+    color: #00b894;
+    border-color: #00b894;
+}
+
+.files-table .btn-view:hover {
+    background: rgba(0, 184, 148, 0.1);
+}
+
+.files-table .btn-rename {
+    color: #f39c12;
+    border-color: #f39c12;
+}
+
+.files-table .btn-rename:hover {
+    background: rgba(243, 156, 18, 0.1);
+}
+
+.files-table .share-toggle {
+    margin-top: 5px;
+    padding: 5px 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.files-table .share-link {
+    font-size: 0.85rem;
+    color: #2c3e50;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Modal Styling */
+.modal-content {
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    background: linear-gradient(45deg, #3498db, #2980b9); /* Sesuaikan dengan home.html dan login.html */
+    color: #fff;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.modal-header .close {
+    color: #fff;
+    opacity: 0.8;
+}
+
+.modal-header .close:hover {
+    opacity: 1;
+}
+
+/* Responsive Styling */
+
+/* Layar besar (di atas 1200px) */
+@media (min-width: 1200px) {
+    .container-dashboard,
+    .container-upload,
+    .container-files {
+        max-width: 1200px;
+    }
+
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Lebih lebar di layar besar */
+    }
+
+    .file-card {
+        padding: 25px;
+    }
+
+    .file-card .file-name {
+        font-size: 1rem;
+    }
+
+    .file-card .file-size {
+        font-size: 0.9rem;
+    }
+
+    .container-files .search-bar input {
+        width: 400px;
+    }
+}
+
+/* Layar sedang (769px - 1200px) */
+@media (max-width: 1200px) {
+    .container-dashboard,
+    .container-upload,
+    .container-files {
+        max-width: 900px;
+    }
+
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+
+    .file-card {
+        padding: 15px;
+    }
+
+    .file-card .file-name {
+        font-size: 0.85rem;
+    }
+
+    .file-card .file-size {
+        font-size: 0.75rem;
+    }
+
+    .container-files .search-bar input {
+        width: 250px;
+    }
+}
+
+/* Layar tablet (577px - 768px) */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 70px;
+        padding: 20px 10px;
+        align-items: center;
+    }
+
+    .sidebar h3 {
+        font-size: 1rem;
+        margin-bottom: 20px;
+    }
+
+    .sidebar h3::after {
+        width: 30px;
+    }
+
+    .sidebar-item {
+        font-size: 0;
+        padding: 10px;
+        justify-content: center;
+    }
+
+    .sidebar-item::before {
+        margin-right: 0;
+    }
+
+    .main-content {
+        margin-left: 70px;
+    }
+
+    .container-dashboard {
+        margin-left: 10px;
+    }
+
+    .container-upload,
+    .container-files {
+        margin: 0 10px;
+    }
+
+    .container-files .search-bar {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .container-files .search-bar input {
+        width: 100%;
+    }
+
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+
+    .file-card {
+        padding: 15px;
+    }
+
+    .file-card .file-name {
+        font-size: 0.8rem;
+    }
+
+    .file-card .file-size {
+        font-size: 0.7rem;
+    }
+
+    .file-card .file-actions button {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+    }
+
+    .share-toggle {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .share-link {
+        max-width: 100%;
+    }
+
+    .files-table .share-toggle {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .files-table .share-link {
+        max-width: 100%;
+    }
+
+    .recent-files-table,
+    .files-table {
+        font-size: 0.8rem;
+    }
+
+    .recent-files-table th,
+    .recent-files-table td,
+    .files-table th,
+    .files-table td {
+        padding: 8px;
+    }
+}
+
+/* Layar kecil (di bawah 576px) */
+@media (max-width: 576px) {
+    .sidebar {
+        width: 60px;
+        padding: 15px 5px;
+    }
+
+    .sidebar h3 {
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+
+    .sidebar h3::after {
+        width: 25px;
+    }
+
+    .sidebar-item {
+        padding: 8px;
+    }
+
+    .sidebar-item::before {
+        width: 18px;
+        height: 18px;
+    }
+
+    .main-content {
+        margin-left: 60px;
+        padding: 20px;
+    }
+
+    .container-dashboard {
+        margin-left: 5px;
+    }
+
+    .container-upload,
+    .container-files {
+        margin: 0 5px;
+    }
+
+    .container-files .search-bar {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .container-files .search-bar input {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 0.85rem;
+    }
+
+    .view-toggle button {
+        font-size: 0.85rem;
+        padding: 4px 8px;
+    }
+
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    .file-card {
+        padding: 10px;
+    }
+
+    .file-card .file-name {
+        font-size: 0.75rem;
+    }
+
+    .file-card .file-size {
+        font-size: 0.65rem;
+    }
+
+    .file-card .file-actions {
+        gap: 3px;
+    }
+
+    .file-card .file-actions button {
+        font-size: 0.75rem;
+        padding: 3px 6px;
+    }
+
+    .file-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .share-toggle {
+        padding: 8px;
+        gap: 6px;
+    }
+
+    .share-link {
+        font-size: 0.75rem;
+        max-width: 100%;
+    }
+
+    .btn-copy {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+    }
+
+    .switch {
+        width: 36px;
+        height: 18px;
+    }
+
+    .slider:before {
+        height: 14px;
+        width: 14px;
+        left: 2px;
+        bottom: 2px;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(18px);
+    }
+
+    .recent-files-table,
+    .files-table {
+        font-size: 0.75rem;
+    }
+
+    .recent-files-table th,
+    .recent-files-table td,
+    .files-table th,
+    .files-table td {
+        padding: 6px;
+    }
+
+    .files-table .share-toggle {
+        padding: 4px 8px;
+        gap: 6px;
+    }
+
+    .files-table .share-link {
+        font-size: 0.75rem;
+        max-width: 100%;
+    }
+
+    .card {
+        border-radius: 15px;
+    }
+
+    .card-icon {
+        width: 35px;
+        height: 35px;
+    }
+
+    .btn-custom {
+        padding: 10px 20px;
+        font-size: 0.85rem;
+    }
+
+    .footer {
+        font-size: 0.75rem;
+        padding: 10px;
+    }
+}
+
+/* Tambahan untuk d-none */
+.d-none {
+    display: none !important;
+}

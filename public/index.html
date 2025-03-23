@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cloud Storage</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+    <div class="wrapper">
+        <div class="sidebar">
+            <h3 class="text-center">Cloud Storage</h3>
+            <a href="#" onclick="loadContent('dashboard', this)" class="sidebar-item dashboard active">Dashboard</a>
+            <a href="#" onclick="loadContent('upload', this)" class="sidebar-item upload">Upload File</a>
+            <a href="#" onclick="loadContent('files', this)" class="sidebar-item files">My Files</a>
+            <a href="/logout" class="sidebar-item logout text-danger">Logout</a>
+        </div>
+        
+        <div class="main-content">
+            <div id="content-area" class="container-upload">
+                <h2 class="font-weight-bold text-center mb-3" style="font-size: 1.8rem;">Selamat Datang di Cloud Storage</h2>
+                <p class="text-muted text-center mb-4" style="font-size: 1rem;">Pilih opsi dari sidebar untuk memulai.</p>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        <p>© 2025 Cloud Storage. All rights reserved.</p>
+    </div>
+
+    <!-- Modal untuk konflik nama file -->
+    <div class="modal fade" id="conflictModal" tabindex="-1" role="dialog" aria-labelledby="conflictModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="conflictModalLabel">Konflik Nama File</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>File "<span id="conflictFileName"></span>" sudah ada. Apa yang ingin Anda lakukan?</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="applyToAll">
+                        <label class="form-check-label" for="applyToAll">
+                            Lakukan untuk semua file
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="handleConflict('overwrite')">Timpa</button>
+                    <button type="button" class="btn btn-secondary" onclick="handleConflict('copy')">Salinan</button>
+                    <button type="button" class="btn btn-danger" onclick="handleConflict('cancel')">Batal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal untuk Rename File -->
+    <div class="modal fade" id="renameModal" tabindex="-1" role="dialog" aria-labelledby="renameModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="renameModalLabel">Rename File</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="renameForm">
+                        <div class="form-group">
+                            <label for="newFileName">New File Name</label>
+                            <input type="text" class="form-control" id="newFileName" required>
+                            <input type="hidden" id="oldFileName">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveNewFileName()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        let conflictFiles = [];
+        let currentConflictIndex = 0;
+        let conflictAction = null;
+        let applyToAll = false;
+        let pendingFiles = [];
+        let fileInputFiles = [];
+
+        // Function to load content dynamically via AJAX
+        function loadContent(page, element) {
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            element.classList.add('active');
+
+            const contentArea = document.getElementById('content-area');
+            fetch(`/${page}.html`)
+                .then(response => response.text())
+                .then(data => {
+                    contentArea.innerHTML = data;
+                    initializePage(page);
+                })
+                .catch(error => {
+                    contentArea.innerHTML = `<p>Error loading ${page} content.</p>`;
+                    console.error('Error loading content:', error);
+                });
+        }
+
+        // Function to initialize page-specific functionality
+        function initializePage(page) {
+            if (page === 'dashboard') {
+                initializeDashboardPage();
+            } else if (page === 'upload') {
+                initializeUploadPage();
+            } else if (page === 'files') {
+                initializeFilesPage();
+            }
+        }
+
+        // Initialize Dashboard Page
+        function initializeDashboardPage() {
+            fetch('/api/storage')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('username').textContent = data.username;
+                    document.getElementById('storageUsage').textContent = data.storageUsage;
+                    const progressBar = document.getElementById('storageProgressBar');
+                    const percentage = (data.usedStorage / data.maxStorage) * 100;
+                    progressBar.style.width = `${percentage}%`;
+
+                    if (percentage < 50) {
+                        progressBar.classList.remove('yellow', 'red');
+                        progressBar.classList.add('green');
+                    } else if (percentage >= 50 && percentage <= 80) {
+                        progressBar.classList.remove('green', 'red');
+                        progressBar.classList.add('yellow');
+                    } else {
+                        progressBar.classList.remove('green', 'yellow');
+                        progressBar.classList.add('red');
+                    }
+
+                    document.getElementById('totalFiles').textContent = data.totalFiles;
+                    document.getElementById('sharedFiles').textContent = data.sharedFiles;
+                    document.getElementById('lastUpload').textContent = data.lastUpload;
+
+                    const tbody = document.querySelector('.recent-files-table tbody');
+                    tbody.innerHTML = '';
+                    data.recentFiles.forEach(file => {
+                        const row = `
+                            <tr>
+                                <td>${file.name}</td>
+                                <td>${(file.size / 1024 / 1024).toFixed(2)} MB</td>
+                                <td>${new Date(file.uploaded).toLocaleDateString()}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="downloadFile('${file.name}')">Download</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.name}')">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching storage info:', error);
+                });
+        }
+
+        // Initialize Upload Page
+        function initializeUploadPage() {
+            const uploadForm = document.getElementById('uploadForm');
+            const fileInput = document.getElementById('file');
+            const fileList = document.getElementById('fileList');
+            const fileListBody = document.getElementById('fileListBody');
+            const submitBtn = document.getElementById('submitBtn');
+            const uploadStatus = document.getElementById('uploadStatus');
+
+            if (!uploadForm || !fileInput || !submitBtn) {
+                console.error('Required elements not found for upload page');
+                uploadStatus.innerHTML = '<div class="alert alert-danger">Error: Form elements not found.</div>';
+                return;
+            }
+
+            function updateFileList(files) {
+                fileListBody.innerHTML = '';
+                if (files.length === 0) {
+                    fileList.style.display = 'none';
+                    submitBtn.classList.add('d-none');
+                    return;
+                }
+
+                fileList.style.display = 'block';
+                submitBtn.classList.remove('d-none');
+
+                Array.from(files).forEach((file, index) => {
+                    const row = `
+                        <tr>
+                            <td>${file.name}</td>
+                            <td>${(file.size / 1024 / 1024).toFixed(2)} MB</td>
+                            <td>
+                                <button class="btn-remove" onclick="removeFile(${index})">Hapus</button>
+                            </td>
+                        </tr>
+                    `;
+                    fileListBody.innerHTML += row;
+                });
+            }
+
+            window.removeFile = function(index) {
+                const dt = new DataTransfer();
+                Array.from(fileInput.files).forEach((file, i) => {
+                    if (i !== index) {
+                        dt.items.add(file);
+                    }
+                });
+                fileInput.files = dt.files;
+                updateFileList(fileInput.files);
+            };
+
+            fileInput.addEventListener('change', () => {
+                updateFileList(fileInput.files);
+            });
+
+            uploadForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const files = fileInput.files;
+                if (files.length === 0) {
+                    uploadStatus.innerHTML = '<div class="alert alert-danger">Please select files to upload.</div>';
+                    return;
+                }
+
+                // Simpan file yang akan diunggah
+                fileInputFiles = Array.from(files);
+                pendingFiles = fileInputFiles.map(file => ({ file, originalName: file.name }));
+
+                // Periksa konflik nama file
+                checkFileConflicts();
+            });
+
+            function checkFileConflicts() {
+                const filenames = pendingFiles.map(f => f.originalName);
+                fetch('/check-file-conflict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filenames })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        conflictFiles = data.conflicts;
+                        currentConflictIndex = 0;
+                        conflictAction = null;
+                        applyToAll = false;
+
+                        if (conflictFiles.length === 0) {
+                            // Tidak ada konflik, langsung upload
+                            uploadFiles();
+                        } else {
+                            // Ada konflik, tampilkan dialog
+                            showConflictDialog();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking file conflicts:', error);
+                        uploadStatus.innerHTML = '<div class="alert alert-danger">Error checking file conflicts.</div>';
+                    });
+            }
+
+            function showConflictDialog() {
+                if (currentConflictIndex >= conflictFiles.length) {
+                    // Semua konflik telah ditangani, lanjutkan upload
+                    uploadFiles();
+                    return;
+                }
+
+                const filename = conflictFiles[currentConflictIndex];
+                document.getElementById('conflictFileName').textContent = filename;
+                $('#conflictModal').modal('show');
+            }
+
+            window.handleConflict = function(action) {
+                applyToAll = document.getElementById('applyToAll').checked;
+                conflictAction = applyToAll ? action : null;
+
+                const filename = conflictFiles[currentConflictIndex];
+                const fileIndex = pendingFiles.findIndex(f => f.originalName === filename);
+
+                fetch('/handle-conflict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, action })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (action === 'cancel') {
+                            // Hapus file dari daftar upload
+                            pendingFiles.splice(fileIndex, 1);
+                        } else if (action === 'copy' && data.newFilename) {
+                            // Ganti nama file dengan nama baru
+                            pendingFiles[fileIndex].originalName = data.newFilename;
+                        }
+                        // Untuk 'overwrite', tidak perlu tindakan tambahan karena file akan ditimpa
+
+                        $('#conflictModal').modal('hide');
+                        currentConflictIndex++;
+
+                        if (applyToAll) {
+                            // Terapkan aksi ke semua file yang tersisa
+                            handleRemainingConflicts(action);
+                        } else {
+                            showConflictDialog();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error handling conflict:', error);
+                        uploadStatus.innerHTML = '<div class="alert alert-danger">Error handling conflict.</div>';
+                    });
+            };
+
+            function handleRemainingConflicts(action) {
+                const promises = [];
+                for (let i = currentConflictIndex; i < conflictFiles.length; i++) {
+                    const filename = conflictFiles[i];
+                    const fileIndex = pendingFiles.findIndex(f => f.originalName === filename);
+
+                    promises.push(
+                        fetch('/handle-conflict', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ filename, action })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (action === 'cancel') {
+                                    pendingFiles.splice(fileIndex, 1);
+                                } else if (action === 'copy' && data.newFilename) {
+                                    pendingFiles[fileIndex].originalName = data.newFilename;
+                                }
+                            })
+                    );
+                }
+
+                Promise.all(promises).then(() => {
+                    currentConflictIndex = conflictFiles.length;
+                    uploadFiles();
+                });
+            }
+
+            function uploadFiles() {
+                if (pendingFiles.length === 0) {
+                    uploadStatus.innerHTML = '<div class="alert alert-danger">No files to upload after conflict resolution.</div>';
+                    return;
+                }
+
+                const formData = new FormData();
+                pendingFiles.forEach(item => {
+                    formData.append('file', item.file, item.originalName);
+                });
+                formData.append('action', conflictAction || 'overwrite');
+                formData.append('applyToAll', applyToAll);
+
+                const progressBar = document.createElement('div');
+                progressBar.classList.add('progress');
+                progressBar.innerHTML = `
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" id="progressBar"></div>
+                `;
+                uploadStatus.innerHTML = '';
+                uploadStatus.appendChild(progressBar);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload', true);
+
+                xhr.upload.addEventListener('progress', function (e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        document.getElementById('progressBar').style.width = percentComplete + '%';
+                    }
+                });
+
+                xhr.onload = function () {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (xhr.status === 200) {
+                            uploadStatus.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
+                            fileInput.value = '';
+                            updateFileList(fileInput.files);
+                        } else {
+                            uploadStatus.innerHTML = `<div class="alert alert-danger">${response.error || 'Error uploading files.'}</div>`;
+                        }
+                    } catch (error) {
+                        console.error('Error parsing response:', error);
+                        uploadStatus.innerHTML = '<div class="alert alert-danger">Error processing server response.</div>';
+                    }
+                };
+
+                xhr.onerror = function () {
+                    console.error('Upload error:', xhr.statusText);
+                    uploadStatus.innerHTML = '<div class="alert alert-danger">Error uploading files: Network error.</div>';
+                };
+
+                xhr.send(formData);
+            }
+
+            const uploadArea = document.querySelector('.card-body');
+            if (uploadArea && fileInput && submitBtn) {
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.style.background = '#f9f9f9';
+                    uploadArea.style.transform = 'scale(1.02)';
+                });
+
+                uploadArea.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    uploadArea.style.background = '#fff';
+                    uploadArea.style.transform = 'scale(1)';
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    fileInput.files = e.dataTransfer.files;
+                    uploadArea.style.background = '#fff';
+                    uploadArea.style.transform = 'scale(1)';
+                    updateFileList(fileInput.files);
+                });
+            }
+        }
+
+        // Initialize Files Page
+        function initializeFilesPage() {
+            fetch('/api/files')
+                .then(response => response.json())
+                .then(data => {
+                    const filesGrid = document.getElementById('filesGrid');
+                    filesGrid.innerHTML = '';
+                    data.files.forEach(file => {
+                        const fileType = file.name.split('.').pop().toLowerCase();
+                        let iconUrl;
+                        if (['jpg', 'jpeg', 'png'].includes(fileType)) {
+                            iconUrl = 'https://cdn-icons-png.flaticon.com/512/136/136524.png';
+                        } else if (['mp4', 'avi'].includes(fileType)) {
+                            iconUrl = 'https://cdn-icons-png.flaticon.com/512/136/136545.png';
+                        } else if (fileType === 'pdf') {
+                            iconUrl = 'https://cdn-icons-png.flaticon.com/512/136/136522.png';
+                        } else if (['doc', 'docx'].includes(fileType)) {
+                            iconUrl = 'https://cdn-icons-png.flaticon.com/512/136/136532.png';
+                        } else {
+                            iconUrl = 'https://cdn-icons-png.flaticon.com/512/136/136534.png';
+                        }
+
+                        const card = `
+                            <div class="file-card" data-filename="${file.name}">
+                                <img src="${iconUrl}" alt="File Icon" class="file-icon">
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-size">${file.sizeFormatted}</div>
+                                <div class="file-actions">
+                                    <button class="btn-view" onclick="viewFile('${file.name}')">View</button>
+                                    <button class="btn-rename" onclick="openRenameModal('${file.name}')">Rename</button>
+                                    <button class="btn-share" onclick="toggleShareVisibility('${file.name}')">Share</button>
+                                    <button class="btn-download" onclick="downloadFile('${file.name}')">Download</button>
+                                    <button class="btn-delete" onclick="deleteFile('${file.name}')">Delete</button>
+                                </div>
+                                <div class="share-toggle" id="share-toggle-${file.name}"></div>
+                            </div>
+                        `;
+                        filesGrid.innerHTML += card;
+
+                        if (file.isShared) {
+                            fetch(`/share/${file.name}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ enable: true })
+                            })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.shareLink) {
+                                        const shareToggle = document.getElementById(`share-toggle-${file.name}`);
+                                        shareToggle.innerHTML = `
+                                            <label class="switch">
+                                                <input type="checkbox" checked onchange="toggleShare('${file.name}', this.checked)">
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span class="share-link" id="share-link-${file.name}" data-full-link="${data.shareLink}">${data.shareLink}</span>
+                                            <button class="btn-copy" onclick="copyShareLink('${file.name}')">Copy</button>
+                                        `;
+                                    }
+                                });
+                        }
+                    });
+
+                    const filesTable = document.querySelector('.files-table tbody');
+                    filesTable.innerHTML = '';
+                    data.files.forEach(file => {
+                        const row = `
+                            <tr data-filename="${file.name}">
+                                <td>${file.name}</td>
+                                <td>${file.sizeFormatted}</td>
+                                <td>${file.uploaded}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info btn-view" onclick="viewFile('${file.name}')">View</button>
+                                    <button class="btn btn-sm btn-outline-warning btn-rename" onclick="openRenameModal('${file.name}')">Rename</button>
+                                    <button class="btn btn-sm btn-outline-primary btn-share" onclick="toggleShareVisibility('${file.name}')">Share</button>
+                                    <button class="btn btn-sm btn-outline-success btn-download" onclick="downloadFile('${file.name}')">Download</button>
+                                    <button class="btn btn-sm btn-outline-danger btn-delete" onclick="deleteFile('${file.name}')">Delete</button>
+                                    <div class="share-toggle" id="share-toggle-table-${file.name}"></div>
+                                </td>
+                            </tr>
+                        `;
+                        filesTable.innerHTML += row;
+
+                        if (file.isShared) {
+                            fetch(`/share/${file.name}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ enable: true })
+                            })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.shareLink) {
+                                        const shareToggle = document.getElementById(`share-toggle-table-${file.name}`);
+                                        shareToggle.innerHTML = `
+                                            <label class="switch">
+                                                <input type="checkbox" checked onchange="toggleShare('${file.name}', this.checked)">
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span class="share-link" id="share-link-table-${file.name}" data-full-link="${data.shareLink}">${data.shareLink}</span>
+                                            <button class="btn-copy" onclick="copyShareLink('${file.name}')">Copy</button>
+                                        `;
+                                    }
+                                });
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching files:', error);
+                });
+
+            const gridViewBtn = document.getElementById('gridViewBtn');
+            const listViewBtn = document.getElementById('listViewBtn');
+            const searchInput = document.getElementById('searchInput');
+
+            if (gridViewBtn) {
+                gridViewBtn.addEventListener('click', () => toggleView('grid'));
+            }
+            if (listViewBtn) {
+                listViewBtn.addEventListener('click', () => toggleView('list'));
+            }
+            if (searchInput) {
+                searchInput.addEventListener('keyup', filterFiles);
+            }
+        }
+
+        // Function to view a file
+        function viewFile(filename) {
+            window.open(`/file-access/${filename}`, '_blank');
+        }
+
+        // Function to toggle share visibility
+        function toggleShareVisibility(filename) {
+            const shareToggleGrid = document.getElementById(`share-toggle-${filename}`);
+            const shareToggleTable = document.getElementById(`share-toggle-table-${filename}`);
+            const shareToggle = shareToggleGrid || shareToggleTable;
+            const isVisible = shareToggle.innerHTML !== '';
+
+            if (isVisible) {
+                shareToggle.innerHTML = '';
+            } else {
+                fetch(`/share/${filename}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enable: false })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        const isChecked = data.isShared ? 'checked' : '';
+                        shareToggle.innerHTML = `
+                            <label class="switch">
+                                <input type="checkbox" ${isChecked} onchange="toggleShare('${filename}', this.checked)">
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="share-link" id="share-link-${filename}" data-full-link="${data.shareLink || ''}">${data.shareLink || ''}</span>
+                            <button class="btn-copy" onclick="copyShareLink('${filename}')">Copy</button>
+                        `;
+                    })
+                    .catch(error => {
+                        console.error('Error checking share status:', error);
+                        shareToggle.innerHTML = `
+                            <label class="switch">
+                                <input type="checkbox" onchange="toggleShare('${filename}', this.checked)">
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="share-link" id="share-link-${filename}"></span>
+                            <button class="btn-copy" onclick="copyShareLink('${filename}')">Copy</button>
+                        `;
+                    });
+            }
+        }
+
+        // Function to toggle share on/off
+        function toggleShare(filename, isEnabled) {
+            fetch(`/share/${filename}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enable: isEnabled })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const shareLinkElement = document.getElementById(`share-link-${filename}`) || document.getElementById(`share-link-table-${filename}`);
+                    if (data.shareLink) {
+                        shareLinkElement.setAttribute('data-full-link', data.shareLink);
+                        shareLinkElement.textContent = data.shareLink;
+                    } else {
+                        shareLinkElement.textContent = '';
+                    }
+                    if (document.querySelector('.sidebar-item.dashboard').classList.contains('active')) {
+                        initializeDashboardPage();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error toggling share:', error);
+                    alert('Error toggling share');
+                });
+        }
+
+        // Function to copy share link
+        function copyShareLink(filename) {
+            const shareLinkElement = document.getElementById(`share-link-${filename}`) || document.getElementById(`share-link-table-${filename}`);
+            const shareLink = shareLinkElement.getAttribute('data-full-link');
+            if (shareLink) {
+                navigator.clipboard.writeText(shareLink).then(() => {
+                    alert('Share link copied to clipboard!');
+                }).catch(err => {
+                    console.error('Error copying link:', err);
+                    alert('Failed to copy link');
+                });
+            } else {
+                alert('No share link available');
+            }
+        }
+
+        // Function to open rename modal
+        function openRenameModal(filename) {
+            const newFileNameInput = document.getElementById('newFileName');
+            const oldFileNameInput = document.getElementById('oldFileName');
+            newFileNameInput.value = filename;
+            oldFileNameInput.value = filename;
+            $('#renameModal').modal('show');
+        }
+
+        // Function to save new file name
+        function saveNewFileName() {
+            const oldName = document.getElementById('oldFileName').value;
+            const newName = document.getElementById('newFileName').value.trim();
+
+            if (!newName) {
+                alert('New name cannot be empty');
+                return;
+            }
+
+            fetch('/rename', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ oldName, newName })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        $('#renameModal').modal('hide');
+                        loadContent('files', document.querySelector('.sidebar-item.files'));
+                    } else {
+                        alert(data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error renaming file:', error);
+                    alert('Error renaming file');
+                });
+        }
+
+        // Toggle between Grid and List view in My Files
+        function toggleView(view) {
+            const gridView = document.getElementById('filesGrid');
+            const tableView = document.getElementById('filesTable');
+            const gridBtn = document.getElementById('gridViewBtn');
+            const listBtn = document.getElementById('listViewBtn');
+
+            if (gridView && tableView && gridBtn && listBtn) {
+                if (view === 'grid') {
+                    gridView.classList.remove('d-none');
+                    tableView.classList.add('d-none');
+                    gridBtn.classList.add('active');
+                    listBtn.classList.remove('active');
+                } else {
+                    gridView.classList.add('d-none');
+                    tableView.classList.remove('d-none');
+                    gridBtn.classList.remove('active');
+                    listBtn.classList.add('active');
+                }
+            }
+        }
+
+        // Filter files in My Files
+        function filterFiles() {
+            const searchInput = document.getElementById('searchInput');
+            if (!searchInput) return;
+
+            const searchValue = searchInput.value.toLowerCase();
+            const fileCards = document.querySelectorAll('.file-card');
+            const tableRows = document.querySelectorAll('.files-table tbody tr');
+
+            fileCards.forEach(card => {
+                const fileName = card.querySelector('.file-name').textContent.toLowerCase();
+                if (fileName.includes(searchValue)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            tableRows.forEach(row => {
+                const fileName = row.cells[0].textContent.toLowerCase();
+                if (fileName.includes(searchValue)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Function to download a file
+        function downloadFile(filename) {
+            window.location.href = `/download/${filename}`;
+        }
+
+        // Function to delete a file
+        function deleteFile(filename) {
+            if (confirm('Are you sure you want to delete this file?')) {
+                fetch(`/delete/${filename}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message || data.error);
+                        loadContent('files', document.querySelector('.sidebar-item.files'));
+                    })
+                    .catch(error => {
+                        console.error('Error deleting file:', error);
+                        alert('Error deleting file');
+                    });
+            }
+        }
+        // Efek partikel di latar belakang
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particlesArray = [];
+        const numberOfParticles = 50;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = Math.random() * 1 - 0.5;
+                this.speedY = Math.random() * 1 - 0.5;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.size > 0.2) this.size -= 0.01;
+
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            for (let i = 0; i < numberOfParticles; i++) {
+                particlesArray.push(new Particle());
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+
+                if (particlesArray[i].size <= 0.2) {
+                    particlesArray.splice(i, 1);
+                    i--;
+                    particlesArray.push(new Particle());
+                }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+
+        initParticles();
+        animateParticles();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Toggle Sidebar di Mobile
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+    </script>
+</body>
+</html>
