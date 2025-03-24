@@ -7,8 +7,7 @@
                 <div class="text-center mb-3">
                     <p>Seret file ke sini atau klik untuk memilih</p>
                     <input type="file" id="file" name="file" multiple style="display: none;" />
-                    <button type="button" class="btn btn-custom" onclick="document.getElementById('file').click()">Pilih
-                        File</button>
+                    <button type="button" class="btn btn-custom" onclick="document.getElementById('file').click()">Pilih File</button>
                 </div>
                 <div id="fileList" style="display: none;">
                     <table class="table">
@@ -32,6 +31,48 @@
 </div>
 
 <script>
+    let currentUploadRequest = null; // Untuk menyimpan referensi ke XMLHttpRequest
+
+    function updateFileList(files) {
+        const fileListBody = document.getElementById('fileListBody');
+        const fileList = document.getElementById('fileList');
+        const submitBtn = document.getElementById('submitBtn');
+        fileListBody.innerHTML = '';
+        if (files.length === 0) {
+            fileList.style.display = 'none';
+            submitBtn.classList.add('d-none');
+            return;
+        }
+
+        fileList.style.display = 'block';
+        submitBtn.classList.remove('d-none');
+
+        Array.from(files).forEach((file, index) => {
+            const row = `
+                <tr>
+                    <td>${file.name}</td>
+                    <td>${(file.size / 1024 / 1024).toFixed(2)} MB</td>
+                    <td>
+                        <button class="btn-remove" onclick="removeFile(${index})">Hapus</button>
+                    </td>
+                </tr>
+            `;
+            fileListBody.innerHTML += row;
+        });
+    }
+
+    window.removeFile = function(index) {
+        const fileInput = document.getElementById('file');
+        const dt = new DataTransfer();
+        Array.from(fileInput.files).forEach((file, i) => {
+            if (i !== index) {
+                dt.items.add(file);
+            }
+        });
+        fileInput.files = dt.files;
+        updateFileList(fileInput.files);
+    };
+
     const uploadArea = document.querySelector('.card-body');
     const fileInput = document.getElementById('file');
     const submitBtn = document.getElementById('submitBtn');
@@ -54,34 +95,45 @@
         fileInput.files = e.dataTransfer.files;
         uploadArea.style.background = '#fff';
         uploadArea.style.transform = 'scale(1)';
-        submitBtn.classList.remove('d-none');
+        updateFileList(fileInput.files);
     });
 
     fileInput.addEventListener('change', () => {
-        if (fileInput.files.length > 0) {
-            submitBtn.classList.remove('d-none');
-        }
+        updateFileList(fileInput.files);
     });
 
     uploadForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        const formData = new FormData(this);
-        const uploadStatus = document.getElementById('uploadStatus');
         const files = fileInput.files;
+        const uploadStatus = document.getElementById('uploadStatus');
 
         if (files.length === 0) {
             uploadStatus.innerHTML = '<div class="alert alert-danger">Pilih file terlebih dahulu.</div>';
             return;
         }
 
+        const formData = new FormData();
+        Array.from(files).forEach(file => {
+            formData.append('file', file);
+        });
+
         const progressBar = document.createElement('div');
         progressBar.classList.add('progress');
         progressBar.innerHTML = `
             <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" id="progressBar"></div>
         `;
+        const cancelButton = document.createElement('button');
+        cancelButton.classList.add('btn', 'btn-danger', 'mt-2');
+        cancelButton.textContent = 'Cancel Upload';
+        cancelButton.onclick = cancelUpload;
+
+        uploadStatus.innerHTML = '';
         uploadStatus.appendChild(progressBar);
+        uploadStatus.appendChild(cancelButton);
 
         const xhr = new XMLHttpRequest();
+        currentUploadRequest = xhr; // Simpan referensi ke XMLHttpRequest
+
         xhr.open('POST', '/upload', true);
 
         xhr.upload.addEventListener('progress', function (e) {
@@ -92,13 +144,30 @@
         });
 
         xhr.onload = function () {
+            currentUploadRequest = null; // Reset setelah selesai
             if (xhr.status === 200) {
                 uploadStatus.innerHTML = '<div class="alert alert-success">File berhasil diunggah!</div>';
+                fileInput.value = ''; // Reset input file
+                updateFileList(fileInput.files);
             } else {
                 uploadStatus.innerHTML = '<div class="alert alert-danger">Gagal mengunggah file.</div>';
             }
         };
 
+        xhr.onerror = function () {
+            currentUploadRequest = null;
+            uploadStatus.innerHTML = '<div class="alert alert-danger">Error mengunggah file: Koneksi gagal.</div>';
+        };
+
         xhr.send(formData);
     });
+
+    function cancelUpload() {
+        if (currentUploadRequest) {
+            currentUploadRequest.abort(); // Batalkan unggah
+            currentUploadRequest = null;
+            const uploadStatus = document.getElementById('uploadStatus');
+            uploadStatus.innerHTML = '<div class="alert alert-warning">Unggah dibatalkan.</div>';
+        }
+    }
 </script>
