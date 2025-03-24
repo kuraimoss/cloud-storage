@@ -6,20 +6,18 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const os = require('os');
 const crypto = require('crypto');
-// Tambahan: logging
 const morgan = require('morgan');
-// Tambahan: untuk HTTPS (opsional)
 const https = require('https');
 
 const app = express();
-const PORT = process.env.PORT || 2996; // Gunakan env variable kalau ada
+const PORT = process.env.PORT || 2996;
 const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(morgan('combined')); // Logging setiap request
+app.use(morgan('combined'));
 
 // Pastikan direktori uploads ada
 const uploadDir = path.join(__dirname, 'uploads');
@@ -89,13 +87,23 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 } // Batas ukuran file 50MB
-});
+}).array('file');
 
 // Middleware untuk autentikasi
 function authMiddleware(req, res, next) {
     if (!req.cookies.userToken) {
-        return res.status(401).sendFile(path.join(__dirname, 'public', 'access-denied.html'));
+        // Redirect ke login jika belum login
+        return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
+    }
+    next();
+}
+
+// Middleware untuk mencegah akses ke halaman login/home saat sudah login
+function preventLoggedInAccess(req, res, next) {
+    if (req.cookies.userToken) {
+        // Redirect ke halaman sebelumnya atau ke root jika tidak ada referer
+        const referer = req.headers.referer || '/';
+        return res.redirect(referer);
     }
     next();
 }
@@ -103,14 +111,19 @@ function authMiddleware(req, res, next) {
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Route untuk halaman home (tanpa autentikasi)
-app.get('/home', (req, res) => {
+// Route untuk halaman home (hanya bisa diakses saat belum login)
+app.get('/home', preventLoggedInAccess, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
 
 // Route untuk login
 const loginRoute = require('./Routes/login');
 app.use('/', loginRoute);
+
+// Route untuk halaman login (mencegah akses jika sudah login)
+app.get('/login', preventLoggedInAccess, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 
 // Route untuk logout
 app.get('/logout', (req, res) => {
@@ -119,12 +132,12 @@ app.get('/logout', (req, res) => {
     res.redirect('/home');
 });
 
-// Route untuk halaman utama (index.html)
+// Route untuk halaman utama (memerlukan autentikasi)
 app.get('/', authMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Menangani halaman dinamis
+// Menangani halaman dinamis (memerlukan autentikasi)
 app.get('/:page', authMiddleware, (req, res) => {
     const page = req.params.page;
     const validPages = ['dashboard', 'upload', 'files'];
@@ -152,20 +165,27 @@ app.post('/check-file-conflict', authMiddleware, (req, res) => {
 });
 
 // Route upload file
-app.post('/upload', authMiddleware, upload.array('file'), (req, res) => {
-    const { action, applyToAll } = req.body;
-    const files = req.files;
+app.post('/upload', authMiddleware, (req, res, next) => {
+    upload(req, res, (err) => {
+        if (err) {
+            console.error('Upload error:', err);
+            return res.status(500).json({ error: 'Failed to upload files: ' + err.message });
+        }
 
-    if (!files || files.length === 0) {
-        return res.status(400).json({ error: 'No files uploaded' });
-    }
+        const { action, applyToAll } = req.body;
+        const files = req.files;
 
-    files.forEach(file => {
-        fileOwnership.push({ filename: file.filename, owner: req.cookies.username || 'unknown' });
+        if (!files || files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded' });
+        }
+
+        files.forEach(file => {
+            fileOwnership.push({ filename: file.filename, owner: req.cookies.username || 'unknown' });
+        });
+        saveDataToFile();
+
+        res.json({ message: 'Files uploaded successfully!' });
     });
-    saveDataToFile();
-
-    res.json({ message: 'Files uploaded successfully!' });
 });
 
 // Route untuk menangani konflik file
@@ -406,7 +426,10 @@ app.post('/share/:filename', authMiddleware, (req, res) => {
     saveDataToFile();
 
     if (enable) {
-        const shareLink = `http://${HOST}:${PORT}/file-access/${filename}?token=${sharedFile.token}`;
+        const host = req.headers.host || HOST;
+        const isIp = /^(\d{1,3}\.){3}\d{1,3}(:\d+)?$/.test(host);
+        const protocol = isIp ? 'http' : 'https';
+        const shareLink = `${protocol}://${host}/file-access/${filename}?token=${sharedFile.token}`;
         res.json({ shareLink, isShared: true });
     } else {
         res.json({ shareLink: null, isShared: false });
@@ -475,7 +498,7 @@ app.use((err, req, res, next) => {
 // Graceful shutdown
 function shutdown() {
     console.log('Shutting down server...');
-    saveDataToFile(); // Simpan data sebelum mati
+    saveDataToFile();
     process.exit(0);
 }
 
@@ -483,12 +506,11 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 // Jalankan server (HTTP biasa)
-// app.listen(PORT, HOST, () => {
-//     console.log(`Aplikasi berjalan pada http://${HOST}:${PORT}`);
-// });
+app.listen(PORT, HOST, () => {
+    console.log(`Aplikasi berjalan pada http://${HOST}:${PORT}`);
+});
 
 // Opsional: Jalankan dengan HTTPS
-// Ganti dengan path ke file SSL kamu
 // const sslOptions = {
 //     key: fs.readFileSync(path.join(__dirname, 'ssl', 'key.pem')),
 //     cert: fs.readFileSync(path.join(__dirname, 'ssl', 'cert.pem'))
@@ -497,6 +519,3 @@ process.on('SIGTERM', shutdown);
 // https.createServer(sslOptions, app).listen(PORT, HOST, () => {
 //     console.log(`Aplikasi berjalan pada https://${HOST}:${PORT}`);
 // });
-app.listen(PORT, HOST, () => {
-    console.log(`Aplikasi berjalan pada http://${HOST}:${PORT}`);
-});

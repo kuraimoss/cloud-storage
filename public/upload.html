@@ -7,7 +7,8 @@
                 <div class="text-center mb-3">
                     <p>Seret file ke sini atau klik untuk memilih</p>
                     <input type="file" id="file" name="file" multiple style="display: none;" />
-                    <button type="button" class="btn btn-custom" onclick="document.getElementById('file').click()">Pilih File</button>
+                    <button type="button" class="btn btn-custom" onclick="document.getElementById('file').click()">Pilih
+                        File</button>
                 </div>
                 <div id="fileList" style="display: none;">
                     <table class="table">
@@ -31,53 +32,62 @@
 </div>
 
 <script>
-    let currentUploadRequest = null; // Untuk menyimpan referensi ke XMLHttpRequest
-
-    function updateFileList(files) {
-        const fileListBody = document.getElementById('fileListBody');
-        const fileList = document.getElementById('fileList');
-        const submitBtn = document.getElementById('submitBtn');
-        fileListBody.innerHTML = '';
-        if (files.length === 0) {
-            fileList.style.display = 'none';
-            submitBtn.classList.add('d-none');
-            return;
-        }
-
-        fileList.style.display = 'block';
-        submitBtn.classList.remove('d-none');
-
-        Array.from(files).forEach((file, index) => {
-            const row = `
-                <tr>
-                    <td>${file.name}</td>
-                    <td>${(file.size / 1024 / 1024).toFixed(2)} MB</td>
-                    <td>
-                        <button class="btn-remove" onclick="removeFile(${index})">Hapus</button>
-                    </td>
-                </tr>
-            `;
-            fileListBody.innerHTML += row;
-        });
-    }
-
-    window.removeFile = function(index) {
-        const fileInput = document.getElementById('file');
-        const dt = new DataTransfer();
-        Array.from(fileInput.files).forEach((file, i) => {
-            if (i !== index) {
-                dt.items.add(file);
-            }
-        });
-        fileInput.files = dt.files;
-        updateFileList(fileInput.files);
-    };
-
     const uploadArea = document.querySelector('.card-body');
     const fileInput = document.getElementById('file');
     const submitBtn = document.getElementById('submitBtn');
     const uploadForm = document.getElementById('uploadForm');
+    let currentXhr = null; // Untuk menyimpan XMLHttpRequest yang sedang berjalan
+    let uploadInProgress = false; // Status apakah upload sedang berlangsung
+    let uploadProgress = 0; // Menyimpan progres upload
 
+    // Fungsi untuk menyimpan status upload ke localStorage
+    function saveUploadStatus() {
+        localStorage.setItem('uploadInProgress', JSON.stringify({
+            inProgress: uploadInProgress,
+            progress: uploadProgress
+        }));
+    }
+
+    // Fungsi untuk memuat status upload dari localStorage
+    function loadUploadStatus() {
+        const status = localStorage.getItem('uploadInProgress');
+        if (status) {
+            const parsed = JSON.parse(status);
+            uploadInProgress = parsed.inProgress;
+            uploadProgress = parsed.progress;
+            if (uploadInProgress) {
+                showUploadProgress(uploadProgress);
+            }
+        }
+    }
+
+    // Fungsi untuk menampilkan progres upload
+    function showUploadProgress(percent) {
+        const uploadStatus = document.getElementById('uploadStatus');
+        uploadStatus.innerHTML = `
+            <div class="progress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: ${percent}%" id="progressBar">${percent.toFixed(2)}%</div>
+            </div>
+            <button id="cancelUploadBtn" class="btn btn-danger mt-2">Batalkan Unggah</button>
+        `;
+        const cancelBtn = document.getElementById('cancelUploadBtn');
+        cancelBtn.addEventListener('click', cancelUpload);
+    }
+
+    // Fungsi untuk membatalkan upload
+    function cancelUpload() {
+        if (currentXhr) {
+            currentXhr.abort(); // Membatalkan request
+            currentXhr = null;
+        }
+        uploadInProgress = false;
+        uploadProgress = 0;
+        saveUploadStatus();
+        const uploadStatus = document.getElementById('uploadStatus');
+        uploadStatus.innerHTML = '<div class="alert alert-warning">Unggah dibatalkan.</div>';
+    }
+
+    // Event listener untuk drag-and-drop
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadArea.style.background = '#f9f9f9';
@@ -95,79 +105,78 @@
         fileInput.files = e.dataTransfer.files;
         uploadArea.style.background = '#fff';
         uploadArea.style.transform = 'scale(1)';
-        updateFileList(fileInput.files);
+        submitBtn.classList.remove('d-none');
     });
 
     fileInput.addEventListener('change', () => {
-        updateFileList(fileInput.files);
+        if (fileInput.files.length > 0) {
+            submitBtn.classList.remove('d-none');
+        }
     });
 
+    // Event listener untuk form submit
     uploadForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        const files = fileInput.files;
+        const formData = new FormData(this);
         const uploadStatus = document.getElementById('uploadStatus');
+        const files = fileInput.files;
 
         if (files.length === 0) {
             uploadStatus.innerHTML = '<div class="alert alert-danger">Pilih file terlebih dahulu.</div>';
             return;
         }
 
-        const formData = new FormData();
-        Array.from(files).forEach(file => {
-            formData.append('file', file);
-        });
-
-        const progressBar = document.createElement('div');
-        progressBar.classList.add('progress');
-        progressBar.innerHTML = `
-            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" id="progressBar"></div>
-        `;
-        const cancelButton = document.createElement('button');
-        cancelButton.classList.add('btn', 'btn-danger', 'mt-2');
-        cancelButton.textContent = 'Cancel Upload';
-        cancelButton.onclick = cancelUpload;
-
-        uploadStatus.innerHTML = '';
-        uploadStatus.appendChild(progressBar);
-        uploadStatus.appendChild(cancelButton);
+        uploadInProgress = true;
+        uploadProgress = 0;
+        saveUploadStatus();
+        showUploadProgress(0);
 
         const xhr = new XMLHttpRequest();
-        currentUploadRequest = xhr; // Simpan referensi ke XMLHttpRequest
+        currentXhr = xhr; // Simpan referensi ke xhr untuk bisa dibatalkan
 
         xhr.open('POST', '/upload', true);
 
         xhr.upload.addEventListener('progress', function (e) {
             if (e.lengthComputable) {
                 const percentComplete = (e.loaded / e.total) * 100;
+                uploadProgress = percentComplete;
+                saveUploadStatus();
                 document.getElementById('progressBar').style.width = percentComplete + '%';
+                document.getElementById('progressBar').textContent = percentComplete.toFixed(2) + '%';
             }
         });
 
         xhr.onload = function () {
-            currentUploadRequest = null; // Reset setelah selesai
+            uploadInProgress = false;
+            uploadProgress = 0;
+            saveUploadStatus();
+            currentXhr = null;
             if (xhr.status === 200) {
                 uploadStatus.innerHTML = '<div class="alert alert-success">File berhasil diunggah!</div>';
-                fileInput.value = ''; // Reset input file
-                updateFileList(fileInput.files);
             } else {
                 uploadStatus.innerHTML = '<div class="alert alert-danger">Gagal mengunggah file.</div>';
             }
         };
 
         xhr.onerror = function () {
-            currentUploadRequest = null;
-            uploadStatus.innerHTML = '<div class="alert alert-danger">Error mengunggah file: Koneksi gagal.</div>';
+            uploadInProgress = false;
+            uploadProgress = 0;
+            saveUploadStatus();
+            currentXhr = null;
+            uploadStatus.innerHTML = '<div class="alert alert-danger">Terjadi kesalahan jaringan saat mengunggah.</div>';
+        };
+
+        xhr.onabort = function () {
+            uploadInProgress = false;
+            uploadProgress = 0;
+            saveUploadStatus();
+            currentXhr = null;
+            uploadStatus.innerHTML = '<div class="alert alert-warning">Unggah dibatalkan.</div>';
         };
 
         xhr.send(formData);
     });
 
-    function cancelUpload() {
-        if (currentUploadRequest) {
-            currentUploadRequest.abort(); // Batalkan unggah
-            currentUploadRequest = null;
-            const uploadStatus = document.getElementById('uploadStatus');
-            uploadStatus.innerHTML = '<div class="alert alert-warning">Unggah dibatalkan.</div>';
-        }
-    }
+    // Memuat status upload saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', loadUploadStatus);
 </script>
