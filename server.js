@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -90,31 +89,41 @@ const upload = multer({
     storage: storage,
 }).array('file');
 
+// Route publik untuk testing
+app.get('/test-public', (req, res) => {
+    res.send('This is a public test route');
+});
+
 // Route untuk mengakses file dengan pengecekan izin (bisa diakses tanpa login jika ada token)
-// Dipindahkan ke atas agar diproses sebelum middleware restrictUnloggedAccess
 app.get('/file-access/:filename', (req, res) => {
     const filename = req.params.filename;
     const filePath = path.join(uploadDir, filename);
     const token = req.query.token;
     const currentUser = req.cookies.username || 'unknown';
 
+    console.log(`Request for file: ${filename}`);
+    console.log(`Token provided: ${token}`);
+    console.log(`File exists: ${fs.existsSync(filePath)}`);
+    console.log(`Shared files: ${JSON.stringify(sharedFiles)}`);
+
     if (!fs.existsSync(filePath)) {
+        console.log(`File not found: ${filePath}`);
         return res.status(404).sendFile(path.join(__dirname, 'public', 'access-denied.html'));
     }
 
-    // Jika pengguna sudah login dan merupakan pemilik file
     const ownership = fileOwnership.find(f => f.filename === filename);
     if (ownership && ownership.owner === currentUser && req.cookies.userToken) {
+        console.log(`Access granted to owner: ${currentUser}`);
         return res.sendFile(filePath);
     }
 
-    // Jika file dibagikan ke publik dengan token yang valid
     const sharedFile = sharedFiles.find(f => f.filename === filename && f.token === token && f.isShared);
     if (sharedFile) {
+        console.log(`Access granted via token: ${token}`);
         return res.sendFile(filePath);
     }
 
-    // Jika tidak ada izin
+    console.log(`Access denied: Invalid token or not shared`);
     res.status(403).sendFile(path.join(__dirname, 'public', 'access-denied.html'));
 });
 
@@ -145,7 +154,7 @@ function restrictUnloggedAccess(req, res, next) {
     next();
 }
 
-// Terapkan middleware secara global setelah route /file-access
+// Terapkan middleware setelah route publik
 app.use(restrictUnloggedAccess);
 
 // Static files
@@ -179,7 +188,7 @@ app.get('/', authMiddleware, (req, res) => {
 
 // Menangani halaman dinamis (memerlukan autentikasi)
 app.get('/:page', authMiddleware, (req, res) => {
-    const page = reqolni.params.page;
+    const page = req.params.page;
     const validPages = ['dashboard', 'upload', 'files'];
 
     if (validPages.includes(page)) {
