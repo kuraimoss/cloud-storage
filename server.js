@@ -108,11 +108,12 @@ function preventLoggedInAccess(req, res, next) {
     next();
 }
 
-// Middleware untuk membatasi akses hanya ke /home dan /login saat belum login
+// Middleware untuk membatasi akses hanya ke /home dan /login saat belum login, kecuali /file-access
 function restrictUnloggedAccess(req, res, next) {
     if (!req.cookies.userToken) {
         const allowedPaths = ['/home', '/login'];
-        if (!allowedPaths.includes(req.path)) {
+        // Cek jika path dimulai dengan /file-access
+        if (!allowedPaths.includes(req.path) && !req.path.startsWith('/file-access')) {
             return res.redirect('/home');
         }
     }
@@ -343,7 +344,7 @@ function getTimeDifference(date) {
     }
 }
 
-// Route untuk mengakses file dengan pengecekan izin
+// Route untuk mengakses file dengan pengecekan izin (bisa diakses tanpa login jika ada token)
 app.get('/file-access/:filename', (req, res) => {
     const filename = req.params.filename;
     const filePath = path.join(uploadDir, filename);
