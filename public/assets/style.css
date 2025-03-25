@@ -3,11 +3,12 @@ body {
     font-family: 'Poppins', sans-serif;
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); /* Sesuaikan dengan home.html dan login.html */
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
     color: #333;
+    overflow-x: hidden;
 }
 
 .wrapper {
@@ -30,6 +31,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    z-index: 1000;
 }
 
 .sidebar h3 {
@@ -121,9 +123,10 @@ body {
     align-items: flex-start;
     min-height: 100vh;
     transition: margin-left 0.4s ease;
+    box-sizing: border-box;
 }
 
-/* Container untuk Dashboard */
+/* Container for Dashboard */
 .container-dashboard {
     max-width: 1100px;
     width: 100%;
@@ -131,7 +134,7 @@ body {
     margin-right: auto;
 }
 
-/* Container untuk Upload File dan My Files */
+/* Container for Upload File and My Files */
 .container-upload,
 .container-files {
     max-width: 1100px;
@@ -144,8 +147,8 @@ body {
     padding: 15px;
     text-align: center;
     font-size: 0.85rem;
-    color: #bdc3c7; /* Sesuaikan dengan home.html dan login.html */
-    background: none; /* Sesuaikan dengan home.html dan login.html */
+    color: #bdc3c7;
+    background: none;
     margin-top: auto;
     position: relative;
     z-index: 1;
@@ -178,7 +181,7 @@ body {
     transition: width 0.5s ease-in-out, background 0.3s ease;
 }
 
-/* Warna dinamis untuk progress bar */
+/* Dynamic colors for progress bar */
 .storage-progress-bar.green {
     background: linear-gradient(90deg, #6ab04c, #55efc4);
 }
@@ -200,21 +203,21 @@ body {
 
 /* Button Styles */
 .btn-custom {
-    background: linear-gradient(45deg, #3498db, #2980b9); /* Sesuaikan dengan home.html dan login.html */
+    background: linear-gradient(45deg, #3498db, #2980b9);
     color: #fff;
     padding: 12px 30px;
-    border-radius: 25px; /* Sesuaikan dengan home.html dan login.html */
+    border-radius: 25px;
     text-transform: uppercase;
     font-weight: 600;
     font-size: 0.9rem;
     letter-spacing: 1px;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4); /* Sesuaikan shadow */
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
     border: none;
 }
 
 .btn-custom:hover {
-    background: linear-gradient(45deg, #5dade2, #4a90e2); /* Sesuaikan dengan home.html dan login.html */
+    background: linear-gradient(45deg, #5dade2, #4a90e2);
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
 }
@@ -577,7 +580,7 @@ input:checked + .slider:before {
 }
 
 .modal-header {
-    background: linear-gradient(45deg, #3498db, #2980b9); /* Sesuaikan dengan home.html dan login.html */
+    background: linear-gradient(45deg, #3498db, #2980b9);
     color: #fff;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
@@ -594,7 +597,7 @@ input:checked + .slider:before {
 
 /* Responsive Styling */
 
-/* Layar besar (di atas 1200px) */
+/* Large screens (above 1200px) */
 @media (min-width: 1200px) {
     .container-dashboard,
     .container-upload,
@@ -603,7 +606,7 @@ input:checked + .slider:before {
     }
 
     .files-grid {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Lebih lebar di layar besar */
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     }
 
     .file-card {
@@ -623,7 +626,7 @@ input:checked + .slider:before {
     }
 }
 
-/* Layar sedang (769px - 1200px) */
+/* Medium screens (769px - 1200px) */
 @media (max-width: 1200px) {
     .container-dashboard,
     .container-upload,
@@ -652,7 +655,7 @@ input:checked + .slider:before {
     }
 }
 
-/* Layar tablet (577px - 768px) */
+/* Tablet screens (577px - 768px) */
 @media (max-width: 768px) {
     .sidebar {
         width: 70px;
@@ -681,10 +684,12 @@ input:checked + .slider:before {
 
     .main-content {
         margin-left: 70px;
+        padding: 20px;
     }
 
     .container-dashboard {
         margin-left: 10px;
+        margin-right: 10px;
     }
 
     .container-upload,
@@ -695,6 +700,7 @@ input:checked + .slider:before {
     .container-files .search-bar {
         flex-direction: column;
         gap: 10px;
+        align-items: flex-start;
     }
 
     .container-files .search-bar input {
@@ -702,11 +708,12 @@ input:checked + .slider:before {
     }
 
     .files-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Smaller grid for tablets */
+        gap: 15px; /* Reduced gap for better fit */
     }
 
     .file-card {
-        padding: 15px;
+        padding: 12px; /* Reduced padding */
     }
 
     .file-card .file-name {
@@ -718,8 +725,13 @@ input:checked + .slider:before {
     }
 
     .file-card .file-actions button {
-        font-size: 0.8rem;
+        font-size: 0.75rem; /* Smaller buttons */
         padding: 4px 8px;
+    }
+
+    .file-icon {
+        width: 40px; /* Smaller icon */
+        height: 40px;
     }
 
     .share-toggle {
@@ -732,6 +744,15 @@ input:checked + .slider:before {
         max-width: 100%;
     }
 
+    .files-table {
+        font-size: 0.8rem;
+    }
+
+    .files-table th,
+    .files-table td {
+        padding: 8px;
+    }
+
     .files-table .share-toggle {
         flex-direction: column;
         align-items: flex-start;
@@ -742,20 +763,17 @@ input:checked + .slider:before {
         max-width: 100%;
     }
 
-    .recent-files-table,
-    .files-table {
+    .recent-files-table {
         font-size: 0.8rem;
     }
 
     .recent-files-table th,
-    .recent-files-table td,
-    .files-table th,
-    .files-table td {
+    .recent-files-table td {
         padding: 8px;
     }
 }
 
-/* Layar kecil (di bawah 576px) */
+/* Small screens (below 576px) */
 @media (max-width: 576px) {
     .sidebar {
         width: 60px;
@@ -782,11 +800,12 @@ input:checked + .slider:before {
 
     .main-content {
         margin-left: 60px;
-        padding: 20px;
+        padding: 15px;
     }
 
     .container-dashboard {
         margin-left: 5px;
+        margin-right: 5px;
     }
 
     .container-upload,
@@ -805,14 +824,19 @@ input:checked + .slider:before {
         font-size: 0.85rem;
     }
 
+    .view-toggle {
+        width: 100%;
+        justify-content: space-between;
+    }
+
     .view-toggle button {
         font-size: 0.85rem;
         padding: 4px 8px;
     }
 
     .files-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 15px;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Even smaller grid for mobile */
+        gap: 10px; /* Further reduced gap */
     }
 
     .file-card {
@@ -829,16 +853,19 @@ input:checked + .slider:before {
 
     .file-card .file-actions {
         gap: 3px;
+        flex-direction: column; /* Stack buttons vertically */
     }
 
     .file-card .file-actions button {
-        font-size: 0.75rem;
+        font-size: 0.7rem; /* Smaller buttons */
         padding: 3px 6px;
+        width: 100%; /* Full width for better touch */
+        text-align: center;
     }
 
     .file-icon {
-        width: 40px;
-        height: 40px;
+        width: 35px; /* Smaller icon */
+        height: 35px;
     }
 
     .share-toggle {
@@ -884,6 +911,12 @@ input:checked + .slider:before {
         padding: 6px;
     }
 
+    .files-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
     .files-table .share-toggle {
         padding: 4px 8px;
         gap: 6px;
@@ -906,11 +939,61 @@ input:checked + .slider:before {
     .btn-custom {
         padding: 10px 20px;
         font-size: 0.85rem;
+        width: 100%;
     }
 
     .footer {
         font-size: 0.75rem;
         padding: 10px;
+    }
+}
+
+/* Extra small screens (below 400px) */
+@media (max-width: 400px) {
+    .sidebar {
+        width: 50px;
+    }
+
+    .main-content {
+        margin-left: 50px;
+        padding: 10px;
+    }
+
+    .files-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Smallest grid for very small screens */
+        gap: 8px; /* Minimal gap */
+    }
+
+    .file-card {
+        padding: 8px;
+    }
+
+    .file-card .file-name {
+        font-size: 0.7rem;
+    }
+
+    .file-card .file-size {
+        font-size: 0.6rem;
+    }
+
+    .file-card .file-actions button {
+        font-size: 0.65rem;
+        padding: 2px 5px;
+    }
+
+    .file-icon {
+        width: 30px;
+        height: 30px;
+    }
+
+    .container-files .search-bar input {
+        padding: 6px 8px;
+        font-size: 0.8rem;
+    }
+
+    .view-toggle button {
+        font-size: 0.8rem;
+        padding: 3px 6px;
     }
 }
 
