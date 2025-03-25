@@ -90,10 +90,37 @@ const upload = multer({
     storage: storage,
 }).array('file');
 
+// Route untuk mengakses file dengan pengecekan izin (bisa diakses tanpa login jika ada token)
+// Dipindahkan ke atas agar diproses sebelum middleware restrictUnloggedAccess
+app.get('/file-access/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(uploadDir, filename);
+    const token = req.query.token;
+    const currentUser = req.cookies.username || 'unknown';
+
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).sendFile(path.join(__dirname, 'public', 'access-denied.html'));
+    }
+
+    // Jika pengguna sudah login dan merupakan pemilik file
+    const ownership = fileOwnership.find(f => f.filename === filename);
+    if (ownership && ownership.owner === currentUser && req.cookies.userToken) {
+        return res.sendFile(filePath);
+    }
+
+    // Jika file dibagikan ke publik dengan token yang valid
+    const sharedFile = sharedFiles.find(f => f.filename === filename && f.token === token && f.isShared);
+    if (sharedFile) {
+        return res.sendFile(filePath);
+    }
+
+    // Jika tidak ada izin
+    res.status(403).sendFile(path.join(__dirname, 'public', 'access-denied.html'));
+});
+
 // Middleware untuk autentikasi
 function authMiddleware(req, res, next) {
     if (!req.cookies.userToken) {
-        // Redirect ke home jika belum login
         return res.redirect('/home');
     }
     next();
@@ -102,25 +129,23 @@ function authMiddleware(req, res, next) {
 // Middleware untuk mencegah akses ke halaman login/home saat sudah login
 function preventLoggedInAccess(req, res, next) {
     if (req.cookies.userToken) {
-        // Redirect ke root jika sudah login
         return res.redirect('/');
     }
     next();
 }
 
-// Middleware untuk membatasi akses hanya ke /home dan /login saat belum login, kecuali /file-access
+// Middleware untuk membatasi akses hanya ke /home dan /login saat belum login
 function restrictUnloggedAccess(req, res, next) {
     if (!req.cookies.userToken) {
         const allowedPaths = ['/home', '/login'];
-        // Cek jika path dimulai dengan /file-access
-        if (!allowedPaths.includes(req.path) && !req.path.startsWith('/file-access')) {
+        if (!allowedPaths.includes(req.path)) {
             return res.redirect('/home');
         }
     }
     next();
 }
 
-// Terapkan middleware secara global
+// Terapkan middleware secara global setelah route /file-access
 app.use(restrictUnloggedAccess);
 
 // Static files
@@ -154,7 +179,7 @@ app.get('/', authMiddleware, (req, res) => {
 
 // Menangani halaman dinamis (memerlukan autentikasi)
 app.get('/:page', authMiddleware, (req, res) => {
-    const page = req.params.page;
+    const page = reqolni.params.page;
     const validPages = ['dashboard', 'upload', 'files'];
 
     if (validPages.includes(page)) {
@@ -343,30 +368,6 @@ function getTimeDifference(date) {
         return 'Just now';
     }
 }
-
-// Route untuk mengakses file dengan pengecekan izin (bisa diakses tanpa login jika ada token)
-app.get('/file-access/:filename', (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.join(uploadDir, filename);
-    const token = req.query.token;
-    const currentUser = req.cookies.username || 'unknown';
-
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).sendFile(path.join(__dirname, 'public', 'access-denied.html'));
-    }
-
-    const ownership = fileOwnership.find(f => f.filename === filename);
-    if (ownership && ownership.owner === currentUser) {
-        return res.sendFile(filePath);
-    }
-
-    const sharedFile = sharedFiles.find(f => f.filename === filename && f.token === token && f.isShared);
-    if (sharedFile) {
-        return res.sendFile(filePath);
-    }
-
-    res.status(403).sendFile(path.join(__dirname, 'public', 'access-denied.html'));
-});
 
 // Route untuk download file
 app.get('/download/:filename', authMiddleware, (req, res) => {
