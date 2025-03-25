@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -92,8 +93,8 @@ const upload = multer({
 // Middleware untuk autentikasi
 function authMiddleware(req, res, next) {
     if (!req.cookies.userToken) {
-        // Redirect ke login jika belum login
-        return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
+        // Redirect ke home jika belum login
+        return res.redirect('/home');
     }
     next();
 }
@@ -101,12 +102,25 @@ function authMiddleware(req, res, next) {
 // Middleware untuk mencegah akses ke halaman login/home saat sudah login
 function preventLoggedInAccess(req, res, next) {
     if (req.cookies.userToken) {
-        // Redirect ke halaman sebelumnya atau ke root jika tidak ada referer
-        const referer = req.headers.referer || '/';
-        return res.redirect(referer);
+        // Redirect ke root jika sudah login
+        return res.redirect('/');
     }
     next();
 }
+
+// Middleware untuk membatasi akses hanya ke /home dan /login saat belum login
+function restrictUnloggedAccess(req, res, next) {
+    if (!req.cookies.userToken) {
+        const allowedPaths = ['/home', '/login'];
+        if (!allowedPaths.includes(req.path)) {
+            return res.redirect('/home');
+        }
+    }
+    next();
+}
+
+// Terapkan middleware secara global
+app.use(restrictUnloggedAccess);
 
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -120,7 +134,7 @@ app.get('/home', preventLoggedInAccess, (req, res) => {
 const loginRoute = require('./Routes/login');
 app.use('/', loginRoute);
 
-// Route untuk halaman login (mencegah akses jika sudah login)
+// Route untuk halaman login (hanya bisa diakses saat belum login)
 app.get('/login', preventLoggedInAccess, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
