@@ -1,0 +1,38 @@
+<%- include('../partials/layout-top', { title, pageId: 'shared', bodyClass: 'app' }) %>
+<div class="app-shell">
+  <div class="overlay" data-sidebar-overlay></div>
+  <%- include('../partials/sidebar', { activePage, sessionUser }) %>
+  <div class="content">
+    <%- include('../partials/topbar', { title, sessionUser }) %>
+
+    <div class="page">
+      <section class="card">
+        <div class="card__header">
+          <div>
+            <div class="card__title">Shared links</div>
+            <div class="card__subtitle">Manage links you’ve created</div>
+          </div>
+          <a class="btn btn--ghost" href="/files" data-nav>
+            Back to files
+            <span class="icon" data-icon="arrow-right"></span>
+          </a>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th class="right">Created</th>
+                <th class="right">Status</th>
+                <th class="right">Actions</th>
+              </tr>
+            </thead>
+            <tbody data-shares-tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<%- include('../partials/layout-bottom') %>

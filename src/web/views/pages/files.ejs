@@ -1,0 +1,79 @@
+<%- include('../partials/layout-top', { title, pageId: 'files', bodyClass: 'app' }) %>
+<div class="app-shell">
+  <div class="overlay" data-sidebar-overlay></div>
+  <%- include('../partials/sidebar', { activePage, sessionUser }) %>
+
+  <div class="content">
+    <%- include('../partials/topbar', { title, sessionUser }) %>
+
+    <div class="page">
+      <section class="card">
+        <div class="card__header">
+          <div>
+            <div class="card__title">My Files</div>
+            <div class="card__subtitle">Search, preview, share, and manage</div>
+          </div>
+          <div class="row row--gap">
+            <div class="segmented" role="tablist" aria-label="View mode">
+              <button class="segmented__btn is-active" type="button" data-view="table">Table</button>
+              <button class="segmented__btn" type="button" data-view="grid">Grid</button>
+            </div>
+            <a class="btn btn--primary" href="/upload" data-nav>
+              Upload
+              <span class="icon" data-icon="upload"></span>
+            </a>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="field field--inline">
+            <span class="icon" data-icon="search"></span>
+            <input class="input input--search" type="search" placeholder="Search files…" data-files-search />
+          </div>
+          <div class="muted" data-files-count>—</div>
+        </div>
+
+        <div class="table-wrap" data-files-table>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th class="right">Size</th>
+                <th class="right">Uploaded</th>
+                <th class="right">Actions</th>
+              </tr>
+            </thead>
+            <tbody data-files-tbody></tbody>
+          </table>
+        </div>
+
+        <div class="files-grid" data-files-grid hidden></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<dialog class="modal" data-rename-modal>
+  <form method="dialog" class="modal__card">
+    <div class="modal__header">
+      <div class="modal__title">Rename file</div>
+      <button class="icon-btn" value="cancel" aria-label="Close">
+        <span class="icon" data-icon="x"></span>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="field">
+        <label class="label" for="renameName">New name</label>
+        <input class="input" id="renameName" type="text" required data-rename-input />
+      </div>
+      <div class="muted" data-rename-hint></div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" value="cancel">Cancel</button>
+      <button class="btn btn--primary" value="ok" data-rename-save>Save</button>
+    </div>
+  </form>
+</dialog>
+
+<%- include('../partials/layout-bottom') %>

@@ -1,0 +1,37 @@
+<%- include('../partials/layout-top', { title, pageId: 'login', bodyClass: 'auth' }) %>
+<main class="auth-shell">
+  <section class="auth-card">
+    <div class="auth-brand">
+      <img class="logo-img logo-img--lg" src="/assets/logo.svg" alt="" aria-hidden="true" />
+      <div>
+        <div class="auth-brand__name">Kuraimos Storage</div>
+        <div class="auth-brand__meta">Sign in to continue</div>
+      </div>
+    </div>
+
+    <form class="form" data-login-form autocomplete="on">
+      <div class="field">
+        <label class="label" for="username">Username</label>
+        <input class="input" id="username" name="username" type="text" inputmode="text" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label class="label" for="password">Password</label>
+        <input class="input" id="password" name="password" type="password" autocomplete="current-password" required />
+      </div>
+
+      <div class="row row--gap">
+        <button class="btn btn--primary w-full" type="submit">
+          <span class="icon" data-icon="lock"></span>
+          Sign in
+        </button>
+      </div>
+
+      <div class="form-help" data-login-error role="alert" aria-live="polite"></div>
+    </form>
+
+    <div class="auth-footer">
+      <div class="muted">Tip: seed admin via <code>npm run db:seed</code>.</div>
+    </div>
+  </section>
+</main>
+<%- include('../partials/layout-bottom') %>

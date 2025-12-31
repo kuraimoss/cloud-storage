@@ -1,0 +1,71 @@
+<%- include('../partials/layout-top', { title, pageId: 'admin-users', bodyClass: 'app' }) %>
+<div class="app-shell">
+  <div class="overlay" data-sidebar-overlay></div>
+  <%- include('../partials/sidebar', { activePage, sessionUser }) %>
+
+  <div class="content">
+    <%- include('../partials/topbar', { title, sessionUser }) %>
+
+    <div class="page">
+      <section class="grid grid--2">
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Create user</div>
+              <div class="card__subtitle">Create a new user + quota</div>
+            </div>
+          </div>
+
+          <form class="form" data-admin-create-user>
+            <div class="field">
+              <label class="label" for="auUsername">Username</label>
+              <input class="input" id="auUsername" name="username" required />
+            </div>
+            <div class="field">
+              <label class="label" for="auEmail">Email (optional)</label>
+              <input class="input" id="auEmail" name="email" type="email" />
+            </div>
+            <div class="field">
+              <label class="label" for="auPassword">Password</label>
+              <input class="input" id="auPassword" name="password" type="password" required />
+            </div>
+            <div class="field">
+              <label class="label" for="auQuota">Quota (MB)</label>
+              <input class="input" id="auQuota" name="quotaMb" type="number" min="1" step="1" value="5120" required />
+            </div>
+            <button class="btn btn--primary" type="submit">
+              <span class="icon" data-icon="user-plus"></span>
+              Create
+            </button>
+            <div class="form-help" data-admin-create-error></div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Users</div>
+              <div class="card__subtitle">Update quota + review usage</div>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th class="right">Used</th>
+                  <th class="right">Quota</th>
+                  <th class="right">Actions</th>
+                </tr>
+              </thead>
+              <tbody data-admin-users-tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<%- include('../partials/layout-bottom') %>

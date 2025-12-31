@@ -1,0 +1,51 @@
+<aside class="sidebar" data-sidebar>
+  <div class="sidebar__brand">
+    <img class="logo-img" src="/assets/logo.svg" alt="" aria-hidden="true" />
+    <div class="brand">
+      <div class="brand__name">Kuraimos Storage</div>
+      <div class="brand__meta">Personal Cloud</div>
+    </div>
+    <button class="icon-btn sidebar__close" type="button" data-sidebar-close aria-label="Close navigation">
+      <span class="icon" data-icon="x"></span>
+    </button>
+  </div>
+
+  <nav class="nav" aria-label="Primary">
+    <a class="nav__item <%= activePage === 'dashboard' ? 'is-active' : '' %>" href="/dashboard" data-nav>
+      <span class="icon" data-icon="grid"></span>
+      <span>Dashboard</span>
+    </a>
+    <a class="nav__item <%= activePage === 'files' ? 'is-active' : '' %>" href="/files" data-nav>
+      <span class="icon" data-icon="files"></span>
+      <span>My Files</span>
+    </a>
+    <a class="nav__item <%= activePage === 'upload' ? 'is-active' : '' %>" href="/upload" data-nav>
+      <span class="icon" data-icon="upload"></span>
+      <span>Upload</span>
+    </a>
+    <a class="nav__item <%= activePage === 'shared' ? 'is-active' : '' %>" href="/shared" data-nav>
+      <span class="icon" data-icon="link"></span>
+      <span>Shared</span>
+    </a>
+    <a class="nav__item <%= activePage === 'account' ? 'is-active' : '' %>" href="/account" data-nav>
+      <span class="icon" data-icon="user"></span>
+      <span>Account</span>
+    </a>
+    <% if (sessionUser?.role === 'super_admin') { %>
+      <a class="nav__item <%= activePage === 'admin' ? 'is-active' : '' %>" href="/admin/users" data-nav>
+        <span class="icon" data-icon="shield"></span>
+        <span>Admin</span>
+      </a>
+    <% } %>
+  </nav>
+
+  <div class="sidebar__footer">
+    <form action="/logout" method="post">
+      <button class="btn btn--ghost btn--danger w-full" type="submit">
+        <span class="icon" data-icon="logout"></span>
+        Logout
+      </button>
+    </form>
+    <div class="sidebar__hint">© <%= new Date().getFullYear() %> Kuraimos</div>
+  </div>
+</aside>

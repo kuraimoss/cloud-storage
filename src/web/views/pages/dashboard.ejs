@@ -1,0 +1,106 @@
+<%- include('../partials/layout-top', { title, pageId: 'dashboard', bodyClass: 'app' }) %>
+<div class="app-shell">
+  <div class="overlay" data-sidebar-overlay></div>
+  <%- include('../partials/sidebar', { activePage, sessionUser }) %>
+
+  <div class="content">
+    <%- include('../partials/topbar', { title, sessionUser }) %>
+
+    <div class="page">
+      <section class="grid grid--3">
+        <div class="card">
+          <div class="card__title">Storage usage</div>
+          <div class="metric">
+            <div class="metric__value" data-metric-used>—</div>
+            <div class="metric__sub" data-metric-quota>—</div>
+          </div>
+          <div class="progress" aria-label="Storage usage">
+            <div class="progress__bar" data-storage-progress style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__title">Total files</div>
+          <div class="metric">
+            <div class="metric__value" data-metric-total-files>—</div>
+            <div class="metric__sub">Across all folders</div>
+          </div>
+          <div class="card__actions">
+            <a class="btn btn--ghost" href="/files" data-nav>
+              View files
+              <span class="icon" data-icon="arrow-right"></span>
+            </a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__title">Shared links</div>
+          <div class="metric">
+            <div class="metric__value" data-metric-shared>—</div>
+            <div class="metric__sub">Active share links</div>
+          </div>
+          <div class="card__actions">
+            <a class="btn btn--ghost" href="/shared" data-nav>
+              Manage
+              <span class="icon" data-icon="arrow-right"></span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid--2 mt-16">
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Recent uploads</div>
+              <div class="card__subtitle">Latest activity</div>
+            </div>
+            <a class="btn btn--ghost" href="/upload" data-nav>
+              Upload
+              <span class="icon" data-icon="upload"></span>
+            </a>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th class="right">Size</th>
+                  <th class="right">When</th>
+                </tr>
+              </thead>
+              <tbody data-recent-files></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Quick actions</div>
+              <div class="card__subtitle">Get things done faster</div>
+            </div>
+          </div>
+          <div class="stack">
+            <a class="action" href="/upload" data-nav>
+              <span class="icon" data-icon="upload"></span>
+              <span>Upload files</span>
+              <span class="icon" data-icon="arrow-right"></span>
+            </a>
+            <a class="action" href="/files" data-nav>
+              <span class="icon" data-icon="files"></span>
+              <span>Browse files</span>
+              <span class="icon" data-icon="arrow-right"></span>
+            </a>
+            <a class="action" href="/account" data-nav>
+              <span class="icon" data-icon="user"></span>
+              <span>Account settings</span>
+              <span class="icon" data-icon="arrow-right"></span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<%- include('../partials/layout-bottom') %>

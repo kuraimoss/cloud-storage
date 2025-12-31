@@ -1,0 +1,75 @@
+<%- include('../partials/layout-top', { title, pageId: 'upload', bodyClass: 'app' }) %>
+<div class="app-shell">
+  <div class="overlay" data-sidebar-overlay></div>
+  <%- include('../partials/sidebar', { activePage, sessionUser }) %>
+  <div class="content">
+    <%- include('../partials/topbar', { title, sessionUser }) %>
+
+    <div class="page">
+      <section class="grid grid--2">
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Upload files</div>
+              <div class="card__subtitle">Drag & drop or pick files</div>
+            </div>
+          </div>
+
+          <div class="dropzone" data-dropzone>
+            <input class="dropzone__input" type="file" multiple data-upload-input />
+            <div class="dropzone__icon">
+              <span class="icon icon--xl" data-icon="upload"></span>
+            </div>
+            <div class="dropzone__title">Drop files here</div>
+            <div class="dropzone__hint">or click to browse</div>
+          </div>
+
+          <div class="mt-16" data-upload-queue hidden>
+            <div class="card__title">Queue</div>
+            <div class="table-wrap mt-8">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th class="right">Size</th>
+                    <th class="right">Status</th>
+                  </tr>
+                </thead>
+                <tbody data-upload-list></tbody>
+              </table>
+            </div>
+
+            <div class="row row--gap mt-12">
+              <button class="btn btn--primary" type="button" data-upload-start>
+                Start upload
+                <span class="icon" data-icon="arrow-right"></span>
+              </button>
+              <button class="btn btn--ghost btn--danger" type="button" data-upload-cancel disabled>
+                Cancel
+              </button>
+            </div>
+
+            <div class="progress mt-12" aria-label="Upload progress" hidden data-upload-progress>
+              <div class="progress__bar" data-upload-progress-bar style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Guidelines</div>
+              <div class="card__subtitle">Keep it tidy and secure</div>
+            </div>
+          </div>
+          <ul class="list">
+            <li>Max upload size per file: <span class="badge" data-max-upload>—</span></li>
+            <li>Uploads are private by default.</li>
+            <li>Use share links only when needed.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<%- include('../partials/layout-bottom') %>

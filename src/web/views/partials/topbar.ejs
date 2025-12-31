@@ -1,0 +1,18 @@
+<header class="topbar">
+  <button class="icon-btn" type="button" data-sidebar-open aria-label="Open navigation">
+    <span class="icon" data-icon="menu"></span>
+  </button>
+
+  <div class="topbar__title">
+    <div class="topbar__heading"><%= title %></div>
+    <div class="topbar__sub">Clean, secure, and fast.</div>
+  </div>
+
+  <div class="topbar__right">
+    <div class="pill">
+      <span class="pill__dot" aria-hidden="true"></span>
+      <span class="pill__text"><%= sessionUser?.username || 'User' %></span>
+    </div>
+  </div>
+</header>
+

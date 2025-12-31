@@ -1,0 +1,55 @@
+<%- include('../partials/layout-top', { title, pageId: 'account', bodyClass: 'app' }) %>
+<div class="app-shell">
+  <div class="overlay" data-sidebar-overlay></div>
+  <%- include('../partials/sidebar', { activePage, sessionUser }) %>
+
+  <div class="content">
+    <%- include('../partials/topbar', { title, sessionUser }) %>
+
+    <div class="page">
+      <section class="grid grid--2">
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Profile</div>
+              <div class="card__subtitle">Account details</div>
+            </div>
+          </div>
+          <div class="kv">
+            <div class="kv__row">
+              <div class="kv__key">Username</div>
+              <div class="kv__val" data-account-username>—</div>
+            </div>
+            <div class="kv__row">
+              <div class="kv__key">Email</div>
+              <div class="kv__val" data-account-email>—</div>
+            </div>
+            <div class="kv__row">
+              <div class="kv__key">Quota</div>
+              <div class="kv__val" data-account-quota>—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <div>
+              <div class="card__title">Security</div>
+              <div class="card__subtitle">Session-based auth</div>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="muted">Password change UI can be added next (needs API endpoint + validation).</div>
+            <form action="/logout" method="post">
+              <button class="btn btn--ghost btn--danger" type="submit">
+                <span class="icon" data-icon="logout"></span>
+                Logout
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<%- include('../partials/layout-bottom') %>
