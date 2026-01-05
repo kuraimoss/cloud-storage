@@ -350,6 +350,7 @@
   function officeViewerEmbedUrl(rawUrl) {
     const url = String(rawUrl || '').trim();
     if (!url) return '';
+    if (!/^https?:\/\//i.test(url)) return '';
     return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
   }
 
@@ -429,6 +430,7 @@
 
     if (kind === 'office') {
       let raw = officeRawUrl;
+      let tokenErr = '';
       if (!raw && officeFileId) {
         try {
           const data = await api(`/api/files/${officeFileId}/office-preview`, {
@@ -439,6 +441,7 @@
           raw = data?.rawUrl || '';
         } catch {
           raw = '';
+          tokenErr = 'Gagal membuat token preview. Coba jalankan db:migrate dan pastikan PUBLIC_SHARE_BASE_URL pakai https:// dan domain bisa diakses publik.';
         }
       }
 
@@ -457,7 +460,7 @@
       host.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:10px">
           <div style="font-weight:800">Office preview</div>
-          <div class="muted">Office preview memakai link token sementara yang otomatis mati (TTL singkat). Pastikan domain kamu bisa diakses publik untuk viewer.</div>
+          <div class="muted">${escapeHtml(tokenErr || 'Office preview butuh URL https yang bisa diakses publik oleh Microsoft viewer. Untuk tetap 100% private tanpa publik sama sekali, harus convert server-side (mis. ke PDF) atau pakai OnlyOffice/Collabora.')}</div>
         </div>
       `;
       return;

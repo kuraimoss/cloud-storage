@@ -43,6 +43,9 @@ function errorHandler(err, req, res, _next) {
     if (err?.code === '42703') {
       message = 'Database schema belum ter-update. Jalankan: npm run db:migrate';
     }
+    if (err?.code === '42P01') {
+      message = 'Database schema belum ter-update. Jalankan: npm run db:migrate';
+    }
   }
 
   if (statusCode >= 500) {

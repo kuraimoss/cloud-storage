@@ -23,8 +23,10 @@ function getRequestBaseUrl(req) {
 }
 
 function getPublicShareBaseUrl(req) {
-  const base = env.publicShareBaseUrl || getRequestBaseUrl(req);
-  return String(base).replace(/\/+$/, '');
+  const base = String(env.publicShareBaseUrl || getRequestBaseUrl(req)).replace(/\/+$/, '');
+  if (/^https?:\/\//i.test(base)) return base;
+  if (base.startsWith('//')) return `https:${base}`;
+  return `https://${base}`;
 }
 
 function tokenSecret() {

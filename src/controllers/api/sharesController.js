@@ -13,8 +13,10 @@ function getBaseUrl(req) {
 }
 
 function getPublicShareBaseUrl(req) {
-  const base = env.publicShareBaseUrl || getBaseUrl(req);
-  return String(base).replace(/\/+$/, '');
+  const base = String(env.publicShareBaseUrl || getBaseUrl(req)).replace(/\/+$/, '');
+  if (/^https?:\/\//i.test(base)) return base;
+  if (base.startsWith('//')) return `https:${base}`;
+  return `https://${base}`;
 }
 
 async function ensureShortCode(share) {
