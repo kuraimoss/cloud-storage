@@ -76,4 +76,23 @@
   </form>
 </dialog>
 
+<dialog class="modal" data-preview-modal>
+  <form method="dialog" class="modal__card modal__card--xl">
+    <div class="modal__header">
+      <div class="modal__title" data-preview-title>Preview</div>
+      <button class="icon-btn" value="cancel" aria-label="Close">
+        <span class="icon" data-icon="x"></span>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="preview-meta muted" data-preview-meta></div>
+      <div class="preview-host" data-preview-host></div>
+    </div>
+    <div class="modal__footer">
+      <a class="btn btn--ghost" data-preview-download target="_blank" rel="noreferrer">Download</a>
+      <button class="btn btn--primary" value="ok">Close</button>
+    </div>
+  </form>
+</dialog>
+
 <%- include('../partials/layout-bottom') %>

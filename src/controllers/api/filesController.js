@@ -2,13 +2,46 @@ const crypto = require('crypto');
 const fs = require('fs');
 const { asyncHandler } = require('../../utils/asyncHandler');
 const { HttpError } = require('../../utils/httpError');
+const { env } = require('../../config/env');
 const filesRepo = require('../../repositories/filesRepo');
 const usersRepo = require('../../repositories/usersRepo');
 const sharesRepo = require('../../repositories/sharesRepo');
 const activityRepo = require('../../repositories/activityRepo');
 const { validateRename } = require('../../services/filesService');
+const { generateShareCode } = require('../../services/shareService');
+const { detectPreviewKind } = require('../../services/previewService');
 const { bytesToHuman } = require('../../utils/bytes');
 const { getStoredFilePath } = require('../../utils/uploads');
+const { streamFile, streamFilePrefix } = require('../../utils/fileStreaming');
+
+function getRequestBaseUrl(req) {
+  const proto = req.get('x-forwarded-proto') || req.protocol;
+  const host = req.get('x-forwarded-host') || req.get('host');
+  return `${proto}://${host}`;
+}
+
+function getPublicShareBaseUrl(req) {
+  const base = env.publicShareBaseUrl || getRequestBaseUrl(req);
+  return String(base).replace(/\/+$/, '');
+}
+
+async function ensureShareShortCode(shareId, currentCode) {
+  if (currentCode) return currentCode;
+  const attempts = 12;
+  for (let i = 0; i < attempts; i += 1) {
+    const code = generateShareCode(env.shareCodeLength);
+    try {
+      const updated = await sharesRepo.setShareShortCode({ shareId, shortCode: code });
+      if (updated?.short_code) return updated.short_code;
+      const latest = await sharesRepo.findShareById(shareId);
+      if (latest?.short_code) return latest.short_code;
+    } catch (err) {
+      if (err?.code === '23505') continue;
+      throw err;
+    }
+  }
+  throw new HttpError(500, 'Failed to allocate share code');
+}
 
 async function sha256FileHex(filePath) {
   const hash = crypto.createHash('sha256');
@@ -24,17 +57,35 @@ async function sha256FileHex(filePath) {
 const list = asyncHandler(async (req, res) => {
   const userId = req.session.userId;
   const files = await filesRepo.listFilesByUserWithShareStatus(userId);
+  const normalized = await Promise.all(
+    files.map(async (f) => {
+      if (!f.share_id) return f;
+      if (f.share_short_code) return f;
+      const code = await ensureShareShortCode(f.share_id, f.share_short_code);
+      return { ...f, share_short_code: code };
+    }),
+  );
+  const publicBase = getPublicShareBaseUrl(req);
   res.json({
     ok: true,
-    files: files.map((f) => ({
-      id: f.id,
-      name: f.original_name,
-      mimeType: f.mime_type,
-      sizeBytes: Number(f.size_bytes),
-      sizeHuman: bytesToHuman(f.size_bytes),
-      createdAt: f.created_at,
-      isShared: Boolean(f.is_shared),
-    })),
+    files: normalized.map((f) => {
+      const kind = detectPreviewKind({ mimeType: f.mime_type, name: f.original_name });
+      const shareCode = f.share_short_code || null;
+      return {
+        id: f.id,
+        name: f.original_name,
+        mimeType: f.mime_type,
+        sizeBytes: Number(f.size_bytes),
+        sizeHuman: bytesToHuman(f.size_bytes),
+        createdAt: f.created_at,
+        isShared: Boolean(f.share_id),
+        shareCode,
+        shareUrl: shareCode ? `${publicBase}/f/${shareCode}` : null,
+        shareRawUrl: shareCode ? `${publicBase}/f/${shareCode}/raw` : null,
+        previewKind: kind,
+        previewUrl: kind !== 'none' ? `/api/files/${f.id}/preview` : null,
+      };
+    }),
   });
 });
 
@@ -118,14 +169,29 @@ const preview = asyncHandler(async (req, res) => {
   const file = await filesRepo.findFileByIdForUser(fileId, userId);
   if (!file) throw new HttpError(404, 'File not found');
 
-  if (!file.mime_type || !file.mime_type.startsWith('image/')) {
-    throw new HttpError(415, 'Preview not supported');
+  const filePath = getStoredFilePath(userId, file.stored_name);
+  res.setHeader('Cache-Control', 'private, max-age=0, no-store');
+
+  const kind = detectPreviewKind({ mimeType: file.mime_type, name: file.original_name });
+  if (kind === 'none') throw new HttpError(415, 'Preview not supported');
+
+  if (kind === 'text') {
+    const maxBytes = 512 * 1024;
+    await streamFilePrefix(req, res, {
+      filePath,
+      filename: file.original_name,
+      maxBytes,
+      mimeType: 'text/plain; charset=utf-8',
+    });
+    return;
   }
 
-  const filePath = getStoredFilePath(userId, file.stored_name);
-  res.setHeader('Content-Type', file.mime_type);
-  res.setHeader('Content-Disposition', 'inline');
-  res.sendFile(filePath);
+  await streamFile(req, res, {
+    filePath,
+    filename: file.original_name,
+    mimeType: file.mime_type || 'application/octet-stream',
+    disposition: 'inline',
+  });
 });
 
 const remove = asyncHandler(async (req, res) => {

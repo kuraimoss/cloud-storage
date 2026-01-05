@@ -65,15 +65,29 @@ CREATE INDEX IF NOT EXISTS files_user_original_name_idx ON files (user_id, origi
 CREATE TABLE IF NOT EXISTS shared_files (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   file_id uuid NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+  short_code text,
   is_active boolean NOT NULL DEFAULT true,
   expires_at timestamptz,
+  view_count bigint NOT NULL DEFAULT 0,
+  download_count bigint NOT NULL DEFAULT 0,
+  last_viewed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   revoked_at timestamptz,
   CONSTRAINT shared_files_expires_future CHECK (expires_at IS NULL OR expires_at > created_at)
 );
 
+ALTER TABLE IF EXISTS shared_files
+  ADD COLUMN IF NOT EXISTS short_code text;
+ALTER TABLE IF EXISTS shared_files
+  ADD COLUMN IF NOT EXISTS view_count bigint NOT NULL DEFAULT 0;
+ALTER TABLE IF EXISTS shared_files
+  ADD COLUMN IF NOT EXISTS download_count bigint NOT NULL DEFAULT 0;
+ALTER TABLE IF EXISTS shared_files
+  ADD COLUMN IF NOT EXISTS last_viewed_at timestamptz;
+
 CREATE INDEX IF NOT EXISTS shared_files_file_id_idx ON shared_files (file_id);
 CREATE INDEX IF NOT EXISTS shared_files_active_idx ON shared_files (is_active) WHERE is_active = true;
+CREATE UNIQUE INDEX IF NOT EXISTS shared_files_short_code_uq ON shared_files (short_code) WHERE short_code IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS activity_logs (
   id bigserial PRIMARY KEY,

@@ -1,6 +1,11 @@
 const express = require('express');
 const { requireWebAuth } = require('../middlewares/requireWebAuth');
-const { downloadShared } = require('../controllers/web/publicShareController');
+const {
+  downloadShared,
+  legacyTokenRedirect,
+  rawShared,
+  viewShared,
+} = require('../controllers/web/publicShareController');
 
 const router = express.Router();
 
@@ -64,6 +69,10 @@ router.get('/admin/users', requireWebAuth, (req, res) => {
   });
 });
 
-router.get('/s/:token', downloadShared);
+router.get('/f/:code', viewShared);
+router.get('/f/:code/raw', rawShared);
+router.get('/f/:code/download', downloadShared);
+
+router.get('/s/:token', legacyTokenRedirect);
 
 module.exports = { webRouter: router };

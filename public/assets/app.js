@@ -68,6 +68,14 @@
     setTimeout(() => el.remove(), 3800);
   }
 
+  function haptic(ms = 10) {
+    try {
+      if (typeof navigator.vibrate === 'function') navigator.vibrate(ms);
+    } catch {
+      // ignore
+    }
+  }
+
   async function api(path, options = {}) {
     const headers = new Headers(options.headers || {});
     if (!headers.has('Accept')) headers.set('Accept', 'application/json');
@@ -90,26 +98,91 @@
     return payload;
   }
 
+  let copyModalInit = false;
+  function initCopyModal() {
+    if (copyModalInit) return;
+    copyModalInit = true;
+
+    const modal = $('[data-copy-modal]');
+    const title = $('[data-copy-title]');
+    const input = $('[data-copy-input]');
+    const hint = $('[data-copy-hint]');
+    const copyBtn = $('[data-copy-btn]');
+    const shareBtn = $('[data-copy-share]');
+    if (!modal || !input || !copyBtn) return;
+
+    const setText = (text, nextTitle = 'Copy') => {
+      if (title) title.textContent = nextTitle;
+      input.value = String(text || '');
+      const canShare = Boolean(navigator.share);
+      if (shareBtn) shareBtn.hidden = !canShare;
+      if (hint) hint.textContent = 'Jika tombol Copy gagal, tap lalu tahan → Salin.';
+      try {
+        input.focus();
+        input.select();
+      } catch {
+        // ignore
+      }
+    };
+
+    modal.addEventListener('close', () => setText('', 'Copy'));
+
+    copyBtn.addEventListener('click', async () => {
+      const value = String(input.value || '');
+      const ok = await copyToClipboard(value);
+      if (ok) {
+        haptic(12);
+        toast('Copied', 'Link tersalin ke clipboard', 'success');
+        modal.close();
+      } else {
+        toast('Copy gagal', 'Tap lalu tahan → Salin', 'danger');
+      }
+    });
+
+    shareBtn?.addEventListener('click', async () => {
+      const value = String(input.value || '');
+      if (!value || !navigator.share) return;
+      try {
+        await navigator.share({ url: value });
+      } catch {
+        // user cancelled
+      }
+    });
+
+    modal.__setText = setText;
+  }
+
+  function openCopyModal(text, title = 'Copy') {
+    initCopyModal();
+    const modal = $('[data-copy-modal]');
+    const setter = modal && modal.__setText;
+    if (!modal?.showModal || typeof setter !== 'function') return false;
+    setter(text, title);
+    modal.showModal();
+    return true;
+  }
+
   async function copyToClipboard(text) {
+    const value = String(text || '');
+    if (!value) return false;
+    if (!window.isSecureContext) return false;
+    if (!navigator.clipboard?.writeText) return false;
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(value);
       return true;
     } catch {
-      const area = document.createElement('textarea');
-      area.value = text;
-      area.style.position = 'fixed';
-      area.style.opacity = '0';
-      document.body.appendChild(area);
-      area.select();
-      try {
-        document.execCommand('copy');
-        return true;
-      } catch {
-        return false;
-      } finally {
-        area.remove();
-      }
+      return false;
     }
+  }
+
+  async function copyWithFallback(text, title = 'Copy') {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      haptic(12);
+      return true;
+    }
+    openCopyModal(text, title);
+    return false;
   }
 
   function initNavigation() {
@@ -234,6 +307,160 @@
     return ext ? ext : 'FILE';
   }
 
+  function fileExtLower(name) {
+    const parts = String(name || '').split('.');
+    if (parts.length <= 1) return '';
+    return parts[parts.length - 1].toLowerCase();
+  }
+
+  function detectPreviewKind(mimeType, name) {
+    const mt = String(mimeType || '').toLowerCase();
+    const ext = fileExtLower(name);
+
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) || mt.startsWith('image/')) {
+      if (mt === 'image/svg+xml' || ext === 'svg') return 'none';
+      return 'image';
+    }
+    if (['mp4', 'webm'].includes(ext) || mt.startsWith('video/')) return 'video';
+    if (['mp3', 'wav'].includes(ext) || mt.startsWith('audio/')) return 'audio';
+    if (ext === 'pdf' || mt === 'application/pdf') return 'pdf';
+
+    if (
+      mt.startsWith('text/') ||
+      ['application/json', 'application/x-ndjson', 'application/xml'].includes(mt) ||
+      ['txt', 'json', 'md', 'log'].includes(ext)
+    ) {
+      return 'text';
+    }
+
+    if (
+      ['docx', 'xlsx', 'pptx'].includes(ext) ||
+      [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      ].includes(mt)
+    ) {
+      return 'office';
+    }
+
+    return 'none';
+  }
+
+  function officeViewerEmbedUrl(rawUrl) {
+    const url = String(rawUrl || '').trim();
+    if (!url) return '';
+    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+  }
+
+  async function renderPreviewInto(host, { name, mimeType, previewUrl, officeRawUrl }) {
+    if (!host) return;
+    host.innerHTML = `<div class="muted">Loading preview...</div>`;
+
+    const kind = detectPreviewKind(mimeType, name);
+    const url = String(previewUrl || '').trim();
+
+    if (kind === 'image' && url) {
+      const img = document.createElement('img');
+      img.className = 'preview-media';
+      img.alt = '';
+      img.loading = 'lazy';
+      img.src = url;
+      host.innerHTML = '';
+      host.appendChild(img);
+      return;
+    }
+
+    if (kind === 'video' && url) {
+      const video = document.createElement('video');
+      video.className = 'preview-media';
+      video.controls = true;
+      video.preload = 'metadata';
+      video.playsInline = true;
+      video.setAttribute('controlslist', 'nodownload noremoteplayback');
+      video.src = url;
+      host.innerHTML = '';
+      host.appendChild(video);
+      return;
+    }
+
+    if (kind === 'audio' && url) {
+      const audio = document.createElement('audio');
+      audio.style.width = '100%';
+      audio.controls = true;
+      audio.preload = 'metadata';
+      audio.setAttribute('controlslist', 'nodownload');
+      audio.src = url;
+      host.innerHTML = '';
+      host.appendChild(audio);
+      return;
+    }
+
+    if (kind === 'pdf' && url) {
+      const iframe = document.createElement('iframe');
+      iframe.className = 'preview-frame';
+      iframe.title = name || 'PDF preview';
+      iframe.src = url;
+      host.innerHTML = '';
+      host.appendChild(iframe);
+      return;
+    }
+
+    if (kind === 'text' && url) {
+      const res = await fetch(url, { cache: 'no-store' });
+      const text = await res.text();
+      host.innerHTML = '';
+
+      const truncated = res.headers.get('x-preview-truncated') === '1';
+      if (truncated) {
+        const warn = document.createElement('div');
+        warn.className = 'muted';
+        warn.style.marginBottom = '8px';
+        warn.textContent = 'Preview dipotong (file terlalu besar).';
+        host.appendChild(warn);
+      }
+
+      const pre = document.createElement('pre');
+      pre.className = 'preview-code';
+      pre.textContent = text;
+      host.appendChild(pre);
+      return;
+    }
+
+    if (kind === 'office') {
+      const embed = officeViewerEmbedUrl(officeRawUrl);
+      if (embed) {
+        const iframe = document.createElement('iframe');
+        iframe.className = 'preview-frame';
+        iframe.title = name || 'Office preview';
+        iframe.referrerPolicy = 'no-referrer';
+        iframe.src = embed;
+        host.innerHTML = '';
+        host.appendChild(iframe);
+        return;
+      }
+
+      host.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-weight:800">Office preview</div>
+          <div class="muted">Untuk DOCX/XLSX/PPTX, viewer butuh URL file yang bisa diakses publik. Aktifkan share dulu.</div>
+        </div>
+      `;
+      return;
+    }
+
+    host.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="icon" data-icon="files"></span>
+        <div>
+          <div style="font-weight:800">Preview tidak didukung</div>
+          <div class="muted">File ini tetap bisa didownload.</div>
+        </div>
+      </div>
+    `;
+    renderIcons();
+  }
+
   function fileThumb(file) {
     if (file.mimeType && file.mimeType.startsWith('image/')) {
       return `<img alt="" src="/api/files/${file.id}/preview" loading="lazy" />`;
@@ -252,10 +479,16 @@
     const renameInput = $('[data-rename-input]');
     const renameHint = $('[data-rename-hint]');
     const renameSave = $('[data-rename-save]');
+    const previewModal = $('[data-preview-modal]');
+    const previewTitle = $('[data-preview-title]');
+    const previewMeta = $('[data-preview-meta]');
+    const previewHost = $('[data-preview-host]');
+    const previewDownload = $('[data-preview-download]');
 
     let allFiles = [];
     let view = 'table';
     let renameTarget = null;
+    let previewTarget = null;
 
     const setView = (next) => {
       view = next;
@@ -303,6 +536,7 @@
             <td class="right">${formatDate(file.createdAt)}</td>
             <td class="right">
               <div style="display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                <button class="btn btn--sm" type="button" data-act="preview">Preview</button>
                 <button class="btn btn--sm" type="button" data-act="download">Download</button>
                 ${shareButtons}
                 <button class="btn btn--sm" type="button" data-act="rename">Rename</button>
@@ -318,10 +552,18 @@
             const btn = e.target.closest('button[data-act]');
             if (!btn) return;
             const act = btn.getAttribute('data-act');
+            if (act === 'preview') openPreview(file);
             if (act === 'download') window.location.href = `/api/files/${file.id}/download`;
             if (act === 'delete') await handleDelete(file);
             if (act === 'share') await enableShare(file, { regenerate: false });
-            if (act === 'copy') await enableShare(file, { regenerate: false });
+            if (act === 'copy') {
+              if (file.shareUrl) {
+                const ok = await copyWithFallback(file.shareUrl, 'Share link');
+                toast('Share link', ok ? 'Copied to clipboard' : 'Tap lalu tahan → Salin', ok ? 'success' : 'danger');
+              } else {
+                await enableShare(file, { regenerate: false });
+              }
+            }
             if (act === 'regen') await enableShare(file, { regenerate: true });
             if (act === 'private') await disableShare(file);
             if (act === 'rename') openRename(file);
@@ -352,6 +594,7 @@
               </div>
             </div>
             <div class="file-actions">
+              <button class="btn btn--sm" type="button" data-act="preview">Preview</button>
               <button class="btn btn--sm" type="button" data-act="download">Download</button>
               ${shareButtons}
               <button class="btn btn--sm" type="button" data-act="rename">Rename</button>
@@ -366,10 +609,18 @@
             const btn = e.target.closest('button[data-act]');
             if (!btn) return;
             const act = btn.getAttribute('data-act');
+            if (act === 'preview') openPreview(file);
             if (act === 'download') window.location.href = `/api/files/${file.id}/download`;
             if (act === 'delete') await handleDelete(file);
             if (act === 'share') await enableShare(file, { regenerate: false });
-            if (act === 'copy') await enableShare(file, { regenerate: false });
+            if (act === 'copy') {
+              if (file.shareUrl) {
+                const ok = await copyWithFallback(file.shareUrl, 'Share link');
+                toast('Share link', ok ? 'Copied to clipboard' : 'Tap lalu tahan → Salin', ok ? 'success' : 'danger');
+              } else {
+                await enableShare(file, { regenerate: false });
+              }
+            }
             if (act === 'regen') await enableShare(file, { regenerate: true });
             if (act === 'private') await disableShare(file);
             if (act === 'rename') openRename(file);
@@ -406,8 +657,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ enable: true, regenerate }),
         });
-        const ok = await copyToClipboard(data.shareUrl);
-        toast('Share link', ok ? 'Copied to clipboard' : 'Copy failed', ok ? 'success' : 'danger');
+        openCopyModal(data.shareUrl, 'Share link');
+        toast('Share link', 'Link siap', 'success');
         await refresh();
       } catch (err) {
         toast('Share failed', err?.message || 'Error', 'danger');
@@ -426,6 +677,30 @@
       } catch (err) {
         toast('Update failed', err?.message || 'Error', 'danger');
       }
+    }
+
+    async function renderPreview(file) {
+      const previewUrl = file.previewUrl || `/api/files/${file.id}/preview`;
+      await renderPreviewInto(previewHost, {
+        name: file.name,
+        mimeType: file.mimeType,
+        previewUrl,
+        officeRawUrl: file.shareRawUrl,
+      });
+    }
+
+    function openPreview(file) {
+      previewTarget = file;
+      if (previewTitle) previewTitle.textContent = file.name;
+      if (previewMeta) {
+        const label = fileTypeLabel(file.mimeType, file.name);
+        previewMeta.textContent = `${label} • ${file.sizeHuman} • ${formatDate(file.createdAt)}`;
+      }
+      if (previewDownload) previewDownload.href = `/api/files/${file.id}/download`;
+      if (previewModal?.showModal) previewModal.showModal();
+      renderPreview(file).catch((err) => {
+        if (previewHost) previewHost.innerHTML = `<div class="muted">Preview failed: ${escapeHtml(err?.message || 'Error')}</div>`;
+      });
     }
 
     function openRename(file) {
@@ -488,8 +763,8 @@
         if (!btn) return;
         const act = btn.getAttribute('data-act');
         if (act === 'copy') {
-          const ok = await copyToClipboard(s.shareUrl);
-          toast('Share link', ok ? 'Copied to clipboard' : 'Copy failed', ok ? 'success' : 'danger');
+          const ok = await copyWithFallback(s.shareUrl, 'Share link');
+          toast('Share link', ok ? 'Copied to clipboard' : 'Tap lalu tahan, lalu Salin', ok ? 'success' : 'danger');
         }
         if (act === 'revoke') {
           try {
@@ -508,6 +783,26 @@
 
       tbody.appendChild(tr);
     }
+  }
+
+  async function initPublicSharePage() {
+    const root = $('[data-public-share]');
+    const preview = root ? $('[data-public-share-preview]', root) : null;
+    const copyBtn = $('[data-public-share-copy]');
+    if (!root || !preview) return;
+
+    const name = root.dataset.name || 'File';
+    const mimeType = root.dataset.mime || '';
+    const previewUrl = root.dataset.previewUrl || '';
+    const officeRawUrl = root.dataset.officeRawUrl || '';
+    const shareUrl = root.dataset.shareUrl || window.location.href;
+
+    await renderPreviewInto(preview, { name, mimeType, previewUrl, officeRawUrl });
+
+    copyBtn?.addEventListener('click', async () => {
+      const ok = await copyWithFallback(shareUrl, 'Share link');
+      toast('Share link', ok ? 'Copied to clipboard' : 'Tap lalu tahan, lalu Salin', ok ? 'success' : 'danger');
+    });
   }
 
   async function initUploadPage() {
@@ -762,6 +1057,7 @@
       if (page === 'dashboard') await initDashboardPage();
       if (page === 'files') await initFilesPage();
       if (page === 'shared') await initSharedPage();
+      if (page === 'public-share') await initPublicSharePage();
       if (page === 'upload') await initUploadPage();
       if (page === 'account') await initAccountPage();
       if (page === 'admin-users') await initAdminUsersPage();

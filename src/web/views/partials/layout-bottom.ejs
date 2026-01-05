@@ -1,3 +1,24 @@
+    <dialog class="modal" data-copy-modal>
+      <form method="dialog" class="modal__card">
+        <div class="modal__header">
+          <div class="modal__title" data-copy-title>Copy</div>
+          <button class="icon-btn" value="cancel" aria-label="Close">
+            <span class="icon" data-icon="x"></span>
+          </button>
+        </div>
+        <div class="modal__body">
+          <div class="field">
+            <label class="label" for="copyValue">Link</label>
+            <input class="input" id="copyValue" type="text" readonly data-copy-input />
+          </div>
+          <div class="muted" style="margin-top:8px" data-copy-hint>Jika tombol Copy gagal, tap lalu tahan → Salin.</div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--ghost" value="cancel">Close</button>
+          <button class="btn" type="button" data-copy-share hidden>Share…</button>
+          <button class="btn btn--primary" type="button" data-copy-btn>Copy</button>
+        </div>
+      </form>
+    </dialog>
   </body>
 </html>
-

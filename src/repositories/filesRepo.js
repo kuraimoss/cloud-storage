@@ -44,14 +44,18 @@ async function listFilesByUserWithShareStatus(userId) {
         f.mime_type,
         f.size_bytes,
         f.created_at,
-        EXISTS (
-          SELECT 1
-          FROM shared_files sf
-          WHERE sf.file_id = f.id
-            AND sf.is_active = true
-            AND (sf.expires_at IS NULL OR sf.expires_at > now())
-        ) AS is_shared
+        sf.share_id,
+        sf.share_short_code
       FROM files f
+      LEFT JOIN LATERAL (
+        SELECT sf.id AS share_id, sf.short_code AS share_short_code
+        FROM shared_files sf
+        WHERE sf.file_id = f.id
+          AND sf.is_active = true
+          AND (sf.expires_at IS NULL OR sf.expires_at > now())
+        ORDER BY sf.created_at DESC
+        LIMIT 1
+      ) sf ON true
       WHERE f.user_id = $1 AND f.is_deleted = false
       ORDER BY f.created_at DESC
     `,

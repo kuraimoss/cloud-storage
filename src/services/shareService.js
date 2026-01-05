@@ -1,11 +1,30 @@
 const crypto = require('crypto');
 
+const BASE62_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
 function signShareId(shareId, secret) {
   const sig = crypto
     .createHmac('sha256', secret)
     .update(String(shareId), 'utf8')
     .digest('base64url');
   return `${shareId}.${sig}`;
+}
+
+function generateShareCode(length = 6) {
+  const targetLen = Math.max(4, Math.min(16, Number(length) || 6));
+  let out = '';
+
+  while (out.length < targetLen) {
+    const buf = crypto.randomBytes(32);
+    for (const b of buf) {
+      if (out.length >= targetLen) break;
+      const max = 62 * 4; // 248 (reduce modulo bias)
+      if (b >= max) continue;
+      out += BASE62_ALPHABET[b % 62];
+    }
+  }
+
+  return out;
 }
 
 function verifyShareToken(token, secret) {
@@ -24,6 +43,7 @@ function verifyShareToken(token, secret) {
 }
 
 module.exports = {
+  generateShareCode,
   signShareId,
   verifyShareToken,
 };

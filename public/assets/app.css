@@ -330,10 +330,31 @@ body.auth{
   padding:14px;
   animation:fadeUp 240ms var(--ease) both;
 }
+.modal__card--xl{width:min(980px, calc(100vw - 24px))}
 .modal__header{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .modal__title{font-weight:800}
 .modal__body{margin-top:12px}
 .modal__footer{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
+
+/* Preview */
+.preview-meta{margin-bottom:10px}
+.preview-host{
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  background:rgba(239,231,204,.35);
+  padding:12px;
+  min-height:180px;
+}
+.preview-media{max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto}
+.preview-frame{width:100%;height:min(70vh, 720px);border:0;border-radius:12px;background:rgba(2,6,23,.05)}
+.preview-code{
+  margin:0;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+  font-size:12.5px;
+  line-height:1.5;
+}
 
 /* Key value */
 .kv{display:flex;flex-direction:column;gap:10px}

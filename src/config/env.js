@@ -32,6 +32,8 @@ const env = {
   dbSchema: stringFromEnv(process.env.DB_SCHEMA, 'cloud_storage'),
   sessionSecret: stringFromEnv(process.env.SESSION_SECRET, ''),
   shareTokenSecret: stringFromEnv(process.env.SHARE_TOKEN_SECRET, ''),
+  publicShareBaseUrl: stringFromEnv(process.env.PUBLIC_SHARE_BASE_URL, ''),
+  shareCodeLength: numberFromEnv(process.env.SHARE_CODE_LENGTH, 6),
   maxUploadBytes: numberFromEnv(process.env.MAX_UPLOAD_BYTES, 100 * 1024 * 1024),
 };
 
