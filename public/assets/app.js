@@ -353,7 +353,7 @@
     return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
   }
 
-  async function renderPreviewInto(host, { name, mimeType, previewUrl, officeRawUrl }) {
+  async function renderPreviewInto(host, { name, mimeType, previewUrl, officeRawUrl, officeFileId }) {
     if (!host) return;
     host.innerHTML = `<div class="muted">Loading preview...</div>`;
 
@@ -428,7 +428,21 @@
     }
 
     if (kind === 'office') {
-      const embed = officeViewerEmbedUrl(officeRawUrl);
+      let raw = officeRawUrl;
+      if (!raw && officeFileId) {
+        try {
+          const data = await api(`/api/files/${officeFileId}/office-preview`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+          });
+          raw = data?.rawUrl || '';
+        } catch {
+          raw = '';
+        }
+      }
+
+      const embed = officeViewerEmbedUrl(raw);
       if (embed) {
         const iframe = document.createElement('iframe');
         iframe.className = 'preview-frame';
@@ -443,7 +457,7 @@
       host.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:10px">
           <div style="font-weight:800">Office preview</div>
-          <div class="muted">Untuk DOCX/XLSX/PPTX, viewer butuh URL file yang bisa diakses publik. Aktifkan share dulu.</div>
+          <div class="muted">Office preview memakai link token sementara yang otomatis mati (TTL singkat). Pastikan domain kamu bisa diakses publik untuk viewer.</div>
         </div>
       `;
       return;
@@ -686,6 +700,7 @@
         mimeType: file.mimeType,
         previewUrl,
         officeRawUrl: file.shareRawUrl,
+        officeFileId: file.id,
       });
     }
 
@@ -797,7 +812,7 @@
     const officeRawUrl = root.dataset.officeRawUrl || '';
     const shareUrl = root.dataset.shareUrl || window.location.href;
 
-    await renderPreviewInto(preview, { name, mimeType, previewUrl, officeRawUrl });
+    await renderPreviewInto(preview, { name, mimeType, previewUrl, officeRawUrl, officeFileId: null });
 
     copyBtn?.addEventListener('click', async () => {
       const ok = await copyWithFallback(shareUrl, 'Share link');

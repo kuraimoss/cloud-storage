@@ -6,6 +6,7 @@ const {
   rawShared,
   viewShared,
 } = require('../controllers/web/publicShareController');
+const { rawOfficePreview } = require('../controllers/web/publicPreviewController');
 
 const router = express.Router();
 
@@ -72,6 +73,8 @@ router.get('/admin/users', requireWebAuth, (req, res) => {
 router.get('/f/:code', viewShared);
 router.get('/f/:code/raw', rawShared);
 router.get('/f/:code/download', downloadShared);
+
+router.get('/p/:token/raw', rawOfficePreview);
 
 router.get('/s/:token', legacyTokenRedirect);
 

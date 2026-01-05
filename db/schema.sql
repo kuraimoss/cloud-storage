@@ -103,6 +103,26 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 CREATE INDEX IF NOT EXISTS activity_logs_user_created_idx ON activity_logs (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS activity_logs_file_created_idx ON activity_logs (file_id, created_at DESC);
 
+-- Short-lived public tokens (for private previews)
+CREATE TABLE IF NOT EXISTS preview_tokens (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  token_hash text NOT NULL UNIQUE,
+  purpose text NOT NULL,
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  file_id uuid NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+  max_uses int NOT NULL DEFAULT 3,
+  used_count int NOT NULL DEFAULT 0,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  last_used_at timestamptz,
+  revoked_at timestamptz,
+  CONSTRAINT preview_tokens_max_uses_check CHECK (max_uses >= 1 AND max_uses <= 50),
+  CONSTRAINT preview_tokens_used_count_check CHECK (used_count >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS preview_tokens_file_created_idx ON preview_tokens (file_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS preview_tokens_active_idx ON preview_tokens (expires_at) WHERE revoked_at IS NULL;
+
 -- Optional: session table for connect-pg-simple (persistent sessions)
 CREATE TABLE IF NOT EXISTS "session" (
   sid varchar NOT NULL COLLATE "default",

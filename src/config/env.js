@@ -34,6 +34,8 @@ const env = {
   shareTokenSecret: stringFromEnv(process.env.SHARE_TOKEN_SECRET, ''),
   publicShareBaseUrl: stringFromEnv(process.env.PUBLIC_SHARE_BASE_URL, ''),
   shareCodeLength: numberFromEnv(process.env.SHARE_CODE_LENGTH, 6),
+  officePreviewTokenTtlSeconds: numberFromEnv(process.env.OFFICE_PREVIEW_TOKEN_TTL_SECONDS, 90),
+  officePreviewTokenMaxUses: numberFromEnv(process.env.OFFICE_PREVIEW_TOKEN_MAX_USES, 6),
   maxUploadBytes: numberFromEnv(process.env.MAX_UPLOAD_BYTES, 100 * 1024 * 1024),
 };
 

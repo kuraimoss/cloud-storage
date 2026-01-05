@@ -10,6 +10,8 @@ const activityRepo = require('../../repositories/activityRepo');
 const { validateRename } = require('../../services/filesService');
 const { generateShareCode } = require('../../services/shareService');
 const { detectPreviewKind } = require('../../services/previewService');
+const { signPayload } = require('../../services/publicTokenService');
+const previewTokensRepo = require('../../repositories/previewTokensRepo');
 const { bytesToHuman } = require('../../utils/bytes');
 const { getStoredFilePath } = require('../../utils/uploads');
 const { streamFile, streamFilePrefix } = require('../../utils/fileStreaming');
@@ -23,6 +25,10 @@ function getRequestBaseUrl(req) {
 function getPublicShareBaseUrl(req) {
   const base = env.publicShareBaseUrl || getRequestBaseUrl(req);
   return String(base).replace(/\/+$/, '');
+}
+
+function tokenSecret() {
+  return env.shareTokenSecret || env.sessionSecret;
 }
 
 async function ensureShareShortCode(shareId, currentCode) {
@@ -243,9 +249,44 @@ const rename = asyncHandler(async (req, res) => {
   res.json({ ok: true, file: { id: updated.id, name: updated.original_name } });
 });
 
+const officePreviewToken = asyncHandler(async (req, res) => {
+  const userId = req.session.userId;
+  const fileId = req.params.id;
+  const file = await filesRepo.findFileByIdForUser(fileId, userId);
+  if (!file) throw new HttpError(404, 'File not found');
+
+  const kind = detectPreviewKind({ mimeType: file.mime_type, name: file.original_name });
+  if (kind !== 'office') throw new HttpError(415, 'Preview not supported');
+
+  const secret = tokenSecret();
+  if (!secret) throw new HttpError(500, 'Missing server config');
+
+  const ttlSeconds = Math.max(15, Math.min(600, Number(env.officePreviewTokenTtlSeconds) || 90));
+  const maxUses = Math.max(1, Math.min(20, Number(env.officePreviewTokenMaxUses) || 6));
+
+  const expMs = Date.now() + ttlSeconds * 1000;
+  const token = crypto.randomBytes(32).toString('base64url');
+  await previewTokensRepo.createPreviewToken({
+    token,
+    purpose: 'office_preview',
+    userId,
+    fileId,
+    expiresAt: new Date(expMs).toISOString(),
+    maxUses,
+  });
+
+  const base = getPublicShareBaseUrl(req);
+  res.json({
+    ok: true,
+    expiresAt: new Date(expMs).toISOString(),
+    rawUrl: `${base}/p/${token}/raw`,
+  });
+});
+
 module.exports = {
   download,
   list,
+  officePreviewToken,
   preview,
   remove,
   rename,

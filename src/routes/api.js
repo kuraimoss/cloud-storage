@@ -55,6 +55,7 @@ router.get('/files', requireAuth, filesController.list);
 router.post('/files', requireAuth, upload.array('files', 20), filesController.upload);
 router.get('/files/:id/download', requireAuth, filesController.download);
 router.get('/files/:id/preview', requireAuth, filesController.preview);
+router.post('/files/:id/office-preview', requireAuth, filesController.officePreviewToken);
 router.delete('/files/:id', requireAuth, filesController.remove);
 router.post('/files/:id/rename', requireAuth, filesController.rename);
 router.post('/files/:id/share', requireAuth, sharesController.toggle);
