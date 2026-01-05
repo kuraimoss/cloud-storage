@@ -1,0 +1,31 @@
+<%- include('../partials/layout-top', { title, pageId: 'error', bodyClass: bodyClass || 'public' }) %>
+
+<main style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px">
+  <section class="card" style="width:min(760px, 100%);">
+    <div class="card__header">
+      <div style="min-width:0">
+        <div class="card__title"><%= heading %></div>
+        <div class="card__subtitle"><%= subtitle %></div>
+      </div>
+      <div class="pill" title="HTTP status">
+        <span class="icon" data-icon="<%= icon || 'shield' %>"></span>
+        <div class="pill__text"><%= statusCode %></div>
+      </div>
+    </div>
+
+    <% if (details) { %>
+      <div class="muted" style="margin-top:10px;word-break:break-word">
+        <%= details %>
+      </div>
+    <% } %>
+
+    <div class="card__actions" style="display:flex;gap:10px;flex-wrap:wrap">
+      <% for (const a of (actions || [])) { %>
+        <a class="btn <%= a.primary ? 'btn--primary' : 'btn--ghost' %>" href="<%= a.href %>"><%= a.label %></a>
+      <% } %>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/layout-bottom') %>
+

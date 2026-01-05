@@ -1,0 +1,36 @@
+<%- include('../partials/layout-top', { title, pageId, bodyClass }) %>
+
+<main style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px">
+  <section class="card" style="width:min(980px, 100%);">
+    <div class="card__header">
+      <div style="min-width:0">
+        <div class="card__title" style="word-break:break-word"><%= share.fileName %></div>
+        <div class="card__subtitle">
+          <%= share.sizeHuman %>
+          ·
+          <%= share.mimeType || 'file' %>
+          ·
+          Viewed <%= share.viewCount %>
+        </div>
+      </div>
+      <div class="row row--gap" style="flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn btn--ghost" type="button" data-public-share-copy>Copy link</button>
+        <a class="btn btn--primary" href="<%= share.downloadUrl %>">Download</a>
+      </div>
+    </div>
+
+    <div
+      data-public-share
+      data-name="<%= share.fileName %>"
+      data-mime="<%= share.mimeType || '' %>"
+      data-preview-url="<%= share.rawUrl %>"
+      data-office-raw-url="<%= share.rawUrl %>"
+      data-share-url="<%= share.url %>"
+    >
+      <div class="preview-host" data-public-share-preview></div>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/layout-bottom') %>
+
