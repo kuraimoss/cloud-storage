@@ -165,11 +165,37 @@
   async function copyToClipboard(text) {
     const value = String(text || '');
     if (!value) return false;
-    if (!window.isSecureContext) return false;
-    if (!navigator.clipboard?.writeText) return false;
+    if (window.isSecureContext && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(value);
+        return true;
+      } catch {
+        // fall through
+      }
+    }
+    return fallbackCopyText(value);
+  }
+
+  function fallbackCopyText(value) {
     try {
-      await navigator.clipboard.writeText(value);
-      return true;
+      const ta = document.createElement('textarea');
+      ta.value = String(value || '');
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      ta.style.left = '-1000px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        ta.setSelectionRange(0, ta.value.length);
+      } catch {
+        // ignore
+      }
+      const ok = typeof document.execCommand === 'function' && document.execCommand('copy');
+      ta.remove();
+      return Boolean(ok);
     } catch {
       return false;
     }
@@ -195,11 +221,15 @@
       if (!sidebar || !overlay) return;
       sidebar.classList.add('is-open');
       overlay.classList.add('is-open');
+      document.body.classList.add('is-sidebar-open');
+      openBtn?.setAttribute('aria-expanded', 'true');
     };
     const close = () => {
       if (!sidebar || !overlay) return;
       sidebar.classList.remove('is-open');
       overlay.classList.remove('is-open');
+      document.body.classList.remove('is-sidebar-open');
+      openBtn?.setAttribute('aria-expanded', 'false');
     };
 
     openBtn?.addEventListener('click', open);
@@ -208,6 +238,17 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') close();
     });
+
+    try {
+      const mql = window.matchMedia('(min-width: 1024px)');
+      const onChange = () => {
+        if (mql.matches) close();
+      };
+      if (typeof mql.addEventListener === 'function') mql.addEventListener('change', onChange);
+      else if (typeof mql.addListener === 'function') mql.addListener(onChange);
+    } catch {
+      // ignore
+    }
 
     $$('a[data-nav]').forEach((a) => {
       a.addEventListener('click', (e) => {
@@ -224,6 +265,47 @@
         }, 160);
       });
     });
+  }
+
+  function applyTableDataLabels(table) {
+    if (!table) return;
+    const headers = $$('thead th', table).map((th) => String(th.textContent || '').trim());
+    if (!headers.length) return;
+
+    $$('tbody tr', table).forEach((tr) => {
+      const cells = $$('td', tr);
+      cells.forEach((td, index) => {
+        const hasColspan = td.hasAttribute('colspan');
+        const label = hasColspan ? '' : headers[index] || '';
+        td.dataset.label = label;
+        td.classList.toggle('cell-full', hasColspan);
+        if (/action/i.test(label)) td.classList.add('cell-actions');
+      });
+    });
+  }
+
+  function applyTableDataLabelsIn(root = document) {
+    $$('table.table', root).forEach(applyTableDataLabels);
+  }
+
+  function initDialogUx() {
+    const dialogs = $$('dialog.modal');
+    if (!dialogs.length) return;
+
+    const sync = () => document.body.classList.toggle('has-modal-open', dialogs.some((d) => d.open));
+    dialogs.forEach((d) => {
+      d.addEventListener('close', sync);
+      d.addEventListener('cancel', sync);
+    });
+
+    try {
+      const obs = new MutationObserver(sync);
+      dialogs.forEach((d) => obs.observe(d, { attributes: true, attributeFilter: ['open'] }));
+    } catch {
+      // ignore
+    }
+
+    sync();
   }
 
   function initLoginPage() {
@@ -273,6 +355,7 @@
       recentBody.innerHTML = '';
       if (!d.recentFiles.length) {
         recentBody.innerHTML = `<tr><td colspan="3" class="muted">No uploads yet.</td></tr>`;
+        applyTableDataLabelsIn(recentBody.closest('.table-wrap') || document);
         return;
       }
       for (const f of d.recentFiles) {
@@ -284,6 +367,7 @@
         `;
         recentBody.appendChild(tr);
       }
+      applyTableDataLabelsIn(recentBody.closest('.table-wrap') || document);
     }
   }
 
@@ -540,9 +624,9 @@
             : `<button class="btn btn--sm" type="button" data-act="share">Share</button>`;
           tr.innerHTML = `
             <td>
-              <div style="display:flex;align-items:center;gap:10px;min-width:240px">
+              <div class="file-cell">
                 <div class="thumb">${fileThumb(file)}</div>
-                <div style="min-width:0">
+                <div class="file-cell__meta">
                   <div class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</div>
                   <div class="file-meta">${file.isShared ? '<span class="badge badge--warn">Shared</span>' : '<span class="badge">Private</span>'}</div>
                 </div>
@@ -552,7 +636,7 @@
             <td class="right">${file.sizeHuman}</td>
             <td class="right">${formatDate(file.createdAt)}</td>
             <td class="right">
-              <div style="display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+              <div class="btn-row">
                 <button class="btn btn--sm" type="button" data-act="preview">Preview</button>
                 <button class="btn btn--sm" type="button" data-act="download">Download</button>
                 ${shareButtons}
@@ -588,6 +672,7 @@
           tbody.appendChild(tr);
         }
         if (!items.length) tbody.innerHTML = `<tr><td colspan="5" class="muted">No files.</td></tr>`;
+        applyTableDataLabelsIn(tableWrap || document);
       }
 
       if (grid) {
@@ -769,7 +854,7 @@
         <td class="right">${formatDate(s.createdAt)}</td>
         <td class="right">${status}</td>
         <td class="right">
-          <div style="display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <div class="btn-row">
             <button class="btn btn--sm" type="button" data-act="copy" ${s.shareUrl ? '' : 'disabled'}>Copy link</button>
             <button class="btn btn--sm btn--danger" type="button" data-act="revoke" ${s.isActive ? '' : 'disabled'}>Make private</button>
           </div>
@@ -801,6 +886,8 @@
 
       tbody.appendChild(tr);
     }
+
+    applyTableDataLabelsIn(tbody.closest('.table-wrap') || document);
   }
 
   async function initPublicSharePage() {
@@ -857,6 +944,7 @@
         `;
         list.appendChild(tr);
       }
+      applyTableDataLabelsIn(list.closest('.table-wrap') || document);
     }
 
     function setProgress(percent) {
@@ -980,19 +1068,21 @@
         const deleteDisabled = u.role === 'super_admin' || (myUserId && u.id === myUserId);
         tr.innerHTML = `
           <td>
-            <div style="display:flex;flex-direction:column;gap:2px">
-              <div style="font-weight:800">${escapeHtml(u.username)}</div>
-              <div class="muted" style="font-size:12px">${escapeHtml(u.email || '')}</div>
+            <div class="user-cell">
+              <div class="user-cell__name">${escapeHtml(u.username)}</div>
+              <div class="user-cell__meta muted">${escapeHtml(u.email || '')}</div>
             </div>
           </td>
           <td>${escapeHtml(u.role)}</td>
           <td class="right">${formatBytes(u.usedBytes)}</td>
           <td class="right">
-            <input class="input" style="width:110px;text-align:right" type="number" min="1" step="1" value="${bytesToMb(u.quotaBytes)}" data-quota />
+            <input class="input quota-input" type="number" min="1" step="1" value="${bytesToMb(u.quotaBytes)}" data-quota />
           </td>
           <td class="right">
-            <button class="btn btn--sm" type="button" data-act="save">Save</button>
-            <button class="btn btn--sm btn--danger" type="button" data-act="delete" ${deleteDisabled ? 'disabled' : ''}>Delete</button>
+            <div class="btn-row">
+              <button class="btn btn--sm" type="button" data-act="save">Save</button>
+              <button class="btn btn--sm btn--danger" type="button" data-act="delete" ${deleteDisabled ? 'disabled' : ''}>Delete</button>
+            </div>
           </td>
         `;
 
@@ -1030,6 +1120,8 @@
 
         tbody.appendChild(tr);
       }
+
+      applyTableDataLabelsIn(tbody.closest('.table-wrap') || document);
     }
 
     form.addEventListener('submit', async (e) => {
@@ -1068,6 +1160,8 @@
   async function main() {
     renderIcons();
     initNavigation();
+    initDialogUx();
+    applyTableDataLabelsIn(document);
 
     const page = document.body.dataset.page;
     try {
